@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum ActivityLevel {
+  sedentary
+  lightlyActive
+  moderatelyActive
+  veryActive
+  extraActive
+}
+
+enum Goal {
+  loseWeight
+  maintainWeight
+  gainWeight
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum FoodSource {
+  adminCatalog
+  external
+  custom
+}
+
+model User {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  passwordHash    String
+  displayName     String
+  role            UserRole          @default(USER)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  profile         UserProfile?
+  nutritionTarget NutritionTarget?
+  dailyRecords    DailyRecord[]
+  recentFoods     RecentFood[]
+  customFoods     FoodItem[]         @relation("CustomFoods")
+}
+
+model UserProfile {
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  age           Int
+  gender        Gender
+  heightCm      Float
+  weightKg      Float
+  activityLevel ActivityLevel
+  goal          Goal
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NutritionTarget {
+  id                        String   @id @default(uuid())
+  userId                    String   @unique
+  startWeightKg             Float    @default(0)
+  targetWeightKg            Float    @default(0)
+  targetDate                DateTime @default(now())
+  bmr                       Float
+  tdee                      Float
+  dailyBaseBurnKcal         Float    @default(0)
+  dailyActivityBurnKcal     Float    @default(0)
+  dailyTotalBurnKcal        Float    @default(0)
+  dailyEnergyAdjustmentKcal Float    @default(0)
+  targetCalories            Float
+  proteinG                  Float
+  carbsG                    Float
+  fatG                      Float
+  totalFatG                 Float    @default(0)
+  fiberG                    Float    @default(25)
+  waterMl                   Float    @default(0)
+  saturatedFatLimitG        Float    @default(0)
+  omega3TargetG             Float    @default(0)
+  transFatLimitG            Float    @default(0)
+  macroRatio                String
+  calculatedAt              DateTime @default(now())
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FoodItem {
+  id                    String       @id @default(uuid())
+  name                  String
+  brandName             String?
+  servingSizeG          Float
+  caloriesPer100g       Float
+  proteinPer100g        Float
+  carbsPer100g          Float
+  fatPer100g            Float
+  totalFatPer100g       Float        @default(0)
+  saturatedFatPer100g   Float        @default(0)
+  omega3Per100g         Float        @default(0)
+  transFatPer100g       Float        @default(0)
+  fiberPer100g          Float        @default(0)
+  source                FoodSource
+  imageAssetPath        String?
+  category              String?
+  displayTag            String?
+  isActive              Boolean      @default(true)
+  ownerUserId           String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  ownerUser             User?        @relation("CustomFoods", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  mealEntries           MealEntry[]
+  recentFoods           RecentFood[]
+
+  @@index([name])
+  @@index([category])
+}
+
+model DailyRecord {
+  id               String      @id @default(uuid())
+  userId           String
+  dateKey          String
+  waterMl          Float       @default(0)
+  exerciseCalories Float       @default(0)
+  updatedAt        DateTime    @updatedAt
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealEntries      MealEntry[]
+
+  @@unique([userId, dateKey])
+  @@index([dateKey])
+}
+
+model MealEntry {
+  id            String      @id @default(uuid())
+  dailyRecordId String
+  foodItemId    String
+  mealType      MealType
+  grams         Float
+  calories      Float
+  proteinG      Float
+  carbsG        Float
+  fatG          Float
+  totalFatG     Float       @default(0)
+  saturatedFatG Float       @default(0)
+  omega3G       Float       @default(0)
+  transFatG     Float       @default(0)
+  fiberG        Float       @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  dailyRecord   DailyRecord @relation(fields: [dailyRecordId], references: [id], onDelete: Cascade)
+  foodItem      FoodItem    @relation(fields: [foodItemId], references: [id], onDelete: Restrict)
+}
+
+model RecentFood {
+  id         String   @id @default(uuid())
+  userId     String
+  foodItemId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, foodItemId])
+  @@index([userId, createdAt])
+}
