@@ -2,7 +2,7 @@ import { ActivityLevel, Gender, Goal } from '@prisma/client';
 import { NutritionTargetService } from './nutrition-target.service';
 
 describe('NutritionTargetService', () => {
-  it('calculates BMR, TDEE and nutrient minimums', () => {
+  it('calculates base TDEE and goal/activity macros for weight loss', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 28,
@@ -15,23 +15,23 @@ describe('NutritionTargetService', () => {
       goal: Goal.loseWeight,
     });
 
-    expect(result.tdee).toBeCloseTo(2491.625);
+    expect(result.tdee).toBeCloseTo(1929);
     expect(result.dailyBaseBurnKcal).toBeCloseTo(1607.5);
-    expect(result.dailyActivityBurnKcal).toBeCloseTo(884.125);
+    expect(result.dailyActivityBurnKcal).toBeCloseTo(321.5);
     expect(result.dailyEnergyAdjustmentKcal).toBeCloseTo(385);
-    expect(result.targetCalories).toBeCloseTo(2106.625);
-    expect(result.proteinG).toBeCloseTo(54.4);
-    expect(result.carbsG).toBe(130);
-    expect(result.totalFatG).toBeCloseTo(34);
-    expect(result.fiberG).toBeCloseTo(29.49, 1);
+    expect(result.targetCalories).toBeCloseTo(1544);
+    expect(result.proteinG).toBeCloseTo(122.4);
+    expect(result.carbsG).toBeCloseTo(171.8);
+    expect(result.totalFatG).toBeCloseTo(40.8);
+    expect(result.fiberG).toBeCloseTo(21.62, 1);
     expect(result.waterMl).toBe(2040);
-    expect(result.saturatedFatLimitG).toBeCloseTo(23.41, 1);
+    expect(result.saturatedFatLimitG).toBeCloseTo(17.16, 1);
     expect(result.omega3TargetG).toBe(1.6);
     expect(result.transFatLimitG).toBe(0);
-    expect(result.macroRatio).toBe('minimums');
+    expect(result.macroRatio).toBe('goal_activity_v1');
   });
 
-  it('keeps nutrient minimums based on weight when calories are clamped low', () => {
+  it('uses goal macros when calories are clamped low', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 40,
@@ -45,13 +45,13 @@ describe('NutritionTargetService', () => {
     });
 
     expect(result.targetCalories).toBe(1200);
-    expect(result.proteinG).toBe(36);
-    expect(result.carbsG).toBe(130);
-    expect(result.totalFatG).toBeCloseTo(22.5);
+    expect(result.proteinG).toBe(72);
+    expect(result.carbsG).toBeCloseTo(167.25);
+    expect(result.totalFatG).toBeCloseTo(27);
     expect(result.fiberG).toBeCloseTo(16.8);
   });
 
-  it('keeps nutrient minimums based on weight when calories are clamped high', () => {
+  it('reduces fat to the floor before letting carbs fall below the goal floor', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 25,
@@ -65,10 +65,50 @@ describe('NutritionTargetService', () => {
     });
 
     expect(result.targetCalories).toBe(5000);
-    expect(result.proteinG).toBe(280);
-    expect(result.carbsG).toBe(130);
+    expect(result.proteinG).toBe(700);
+    expect(result.carbsG).toBeCloseTo(156.25);
     expect(result.totalFatG).toBeCloseTo(175);
     expect(result.fiberG).toBeCloseTo(70);
+  });
+
+  it('keeps maintenance calories at base burn while activity changes macros', () => {
+    const service = new NutritionTargetService();
+    const result = service.calculate({
+      age: 30,
+      gender: Gender.male,
+      heightCm: 170,
+      weightKg: 70,
+      targetWeightKg: 70,
+      targetDate: new Date(Date.now() + 100 * 86_400_000),
+      activityLevel: ActivityLevel.veryActive,
+      goal: Goal.maintainWeight,
+    });
+
+    expect(result.tdee).toBeCloseTo(1941);
+    expect(result.dailyEnergyAdjustmentKcal).toBe(0);
+    expect(result.targetCalories).toBeCloseTo(1941);
+    expect(result.proteinG).toBeCloseTo(112);
+    expect(result.totalFatG).toBeCloseTo(56);
+    expect(result.carbsG).toBeCloseTo(247.25);
+  });
+
+  it('uses higher carb floor for weight gain when calories allow it', () => {
+    const service = new NutritionTargetService();
+    const result = service.calculate({
+      age: 30,
+      gender: Gender.male,
+      heightCm: 170,
+      weightKg: 70,
+      targetWeightKg: 72,
+      targetDate: new Date(Date.now() + 100 * 86_400_000),
+      activityLevel: ActivityLevel.lightlyActive,
+      goal: Goal.gainWeight,
+    });
+
+    expect(result.proteinG).toBeCloseTo(119);
+    expect(result.totalFatG).toBeCloseTo(56);
+    expect(result.carbsG).toBeGreaterThanOrEqual(180);
+    expect(result.macroRatio).toBe('goal_activity_v1');
   });
 
   it('rejects goal directions that conflict with target weight', () => {

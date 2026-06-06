@@ -1,4 +1,5 @@
 import { ActivityLevel, Gender, Goal } from "@prisma/client";
+import { NutritionTargetService } from "./nutrition-target.service";
 import { ProfileService } from "./profile.service";
 
 describe("ProfileService target overview calories", () => {
@@ -228,5 +229,42 @@ describe("ProfileService target overview calories", () => {
     expect(result?.caloriePlan.dailyBurnKcal).toBe(2400);
     expect(result?.caloriePlan.dailyAdjustmentKcal).toBe(400);
     expect(result?.caloriePlan.targetSummaryKey).toBe("eat_more_than_burn");
+  });
+
+  it("recalculates stored legacy nutrition targets when requested", async () => {
+    const targetDate = new Date(Date.now() + 100 * 86_400_000);
+    const legacyTarget = {
+      ...nutritionTarget,
+      targetWeightKg: 68,
+      targetDate,
+      macroRatio: "30/40/30",
+    };
+    const prisma = {
+      userProfile: {
+        findUnique: jest.fn().mockResolvedValue(profile),
+      },
+      nutritionTarget: {
+        findUnique: jest.fn().mockResolvedValue(legacyTarget),
+        upsert: jest.fn(({ update }) =>
+          Promise.resolve({ ...legacyTarget, ...update }),
+        ),
+      },
+    };
+    const service = new ProfileService(
+      prisma as never,
+      new NutritionTargetService(),
+    );
+
+    const result = await service.getNutritionTarget("user-1");
+
+    expect(result?.macroRatio).toBe("goal_activity_v1");
+    expect(result?.proteinG).toBeCloseTo(119);
+    expect(result?.totalFatG).toBeCloseTo(42);
+    expect(prisma.nutritionTarget.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: expect.objectContaining({ macroRatio: "goal_activity_v1" }),
+      }),
+    );
   });
 });

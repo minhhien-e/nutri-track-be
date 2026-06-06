@@ -3,7 +3,7 @@ import { Goal, NutritionTarget } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { CalculateNutritionTargetDto } from "./dto/calculate-nutrition-target.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
-import { NutritionTargetService } from "./nutrition-target.service";
+import { MACRO_FORMULA_VERSION, NutritionTargetService } from "./nutrition-target.service";
 
 @Injectable()
 export class ProfileService {
@@ -16,8 +16,13 @@ export class ProfileService {
     return this.prisma.userProfile.findUnique({ where: { userId } });
   }
 
-  getNutritionTarget(userId: string) {
-    return this.prisma.nutritionTarget.findUnique({ where: { userId } });
+  async getNutritionTarget(userId: string) {
+    const [profile, nutritionTarget] = await Promise.all([
+      this.prisma.userProfile.findUnique({ where: { userId } }),
+      this.prisma.nutritionTarget.findUnique({ where: { userId } }),
+    ]);
+    if (!profile || !nutritionTarget) return nutritionTarget;
+    return this.normalizeNutritionTarget(userId, profile, nutritionTarget);
   }
 
   calculateTarget(dto: CalculateNutritionTargetDto) {
@@ -48,11 +53,16 @@ export class ProfileService {
   }
 
   async getTargetOverview(userId: string) {
-    const [profile, nutritionTarget] = await Promise.all([
+    const [profile, storedNutritionTarget] = await Promise.all([
       this.prisma.userProfile.findUnique({ where: { userId } }),
       this.prisma.nutritionTarget.findUnique({ where: { userId } }),
     ]);
-    if (!profile || !nutritionTarget) return null;
+    if (!profile || !storedNutritionTarget) return null;
+    const nutritionTarget = await this.normalizeNutritionTarget(
+      userId,
+      profile,
+      storedNutritionTarget,
+    );
 
     const dateKey = new Date().toISOString().slice(0, 10);
     const record = await this.prisma.dailyRecord.findUnique({
@@ -208,6 +218,40 @@ export class ProfileService {
       },
       statusKeys,
     };
+  }
+
+  private async normalizeNutritionTarget(
+    userId: string,
+    profile: {
+      age: number;
+      gender: UpdateProfileDto["gender"];
+      heightCm: number;
+      weightKg: number;
+      activityLevel: UpdateProfileDto["activityLevel"];
+      goal: Goal;
+    },
+    target: NutritionTarget,
+  ) {
+    if (target.macroRatio === MACRO_FORMULA_VERSION) return target;
+    try {
+      const recalculated = this.nutritionTargetService.calculate({
+        age: profile.age,
+        gender: profile.gender,
+        heightCm: profile.heightCm,
+        weightKg: profile.weightKg,
+        targetWeightKg: target.targetWeightKg,
+        targetDate: target.targetDate,
+        activityLevel: profile.activityLevel,
+        goal: profile.goal,
+      });
+      return this.prisma.nutritionTarget.upsert({
+        where: { userId },
+        update: recalculated,
+        create: { userId, ...recalculated },
+      });
+    } catch {
+      return target;
+    }
   }
 
   private getStatusKeys(
