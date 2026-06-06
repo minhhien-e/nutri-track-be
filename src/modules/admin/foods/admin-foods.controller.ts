@@ -19,6 +19,11 @@ export class AdminFoodsController {
     return this.adminFoodsService.search(query);
   }
 
+  @Get('categories')
+  categories() {
+    return this.adminFoodsService.getCategories();
+  }
+
   @Post()
   create(@Body() dto: CreateAdminFoodDto) {
     return this.adminFoodsService.create(dto);

@@ -16,6 +16,10 @@ export class AdminFoodsService {
     return this.foodsRepository.adminSearch(query);
   }
 
+  getCategories() {
+    return this.foodsRepository.getAdminCategories();
+  }
+
   getById(id: string) {
     return this.foodsService.getAnyById(id);
   }

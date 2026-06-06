@@ -132,6 +132,21 @@ export class FoodsRepository {
     };
   }
 
+  async getAdminCategories() {
+    const rows = await this.prisma.foodItem.findMany({
+      where: {
+        ownerUserId: null,
+        category: { not: null },
+      },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return rows
+      .map((row) => row.category)
+      .filter((category): category is string => Boolean(category));
+  }
+
   createCatalog(data: Prisma.FoodItemCreateInput) {
     return this.prisma.foodItem.create({ data });
   }
