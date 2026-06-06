@@ -2,7 +2,7 @@ import { ActivityLevel, Gender, Goal } from '@prisma/client';
 import { NutritionTargetService } from './nutrition-target.service';
 
 describe('NutritionTargetService', () => {
-  it('calculates BMR, TDEE and macro target', () => {
+  it('calculates BMR, TDEE and nutrient minimums', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 28,
@@ -20,16 +20,18 @@ describe('NutritionTargetService', () => {
     expect(result.dailyActivityBurnKcal).toBeCloseTo(884.125);
     expect(result.dailyEnergyAdjustmentKcal).toBeCloseTo(385);
     expect(result.targetCalories).toBeCloseTo(2106.625);
-    expect(result.totalFatG).toBeCloseTo(70.22, 1);
-    expect(result.fiberG).toBe(25);
-    expect(result.waterMl).toBe(2380);
+    expect(result.proteinG).toBeCloseTo(54.4);
+    expect(result.carbsG).toBe(130);
+    expect(result.totalFatG).toBeCloseTo(34);
+    expect(result.fiberG).toBeCloseTo(29.49, 1);
+    expect(result.waterMl).toBe(2040);
     expect(result.saturatedFatLimitG).toBeCloseTo(23.41, 1);
     expect(result.omega3TargetG).toBe(1.6);
     expect(result.transFatLimitG).toBe(0);
-    expect(result.macroRatio).toBe('30/40/30');
+    expect(result.macroRatio).toBe('minimums');
   });
 
-  it('clamps low target calories before calculating macros', () => {
+  it('keeps nutrient minimums based on weight when calories are clamped low', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 40,
@@ -43,12 +45,13 @@ describe('NutritionTargetService', () => {
     });
 
     expect(result.targetCalories).toBe(1200);
-    expect(result.proteinG).toBe(90);
-    expect(result.carbsG).toBe(120);
-    expect(result.totalFatG).toBeCloseTo(40);
+    expect(result.proteinG).toBe(36);
+    expect(result.carbsG).toBe(130);
+    expect(result.totalFatG).toBeCloseTo(22.5);
+    expect(result.fiberG).toBeCloseTo(16.8);
   });
 
-  it('clamps high target calories before calculating macros', () => {
+  it('keeps nutrient minimums based on weight when calories are clamped high', () => {
     const service = new NutritionTargetService();
     const result = service.calculate({
       age: 25,
@@ -62,9 +65,10 @@ describe('NutritionTargetService', () => {
     });
 
     expect(result.targetCalories).toBe(5000);
-    expect(result.proteinG).toBe(375);
-    expect(result.carbsG).toBe(500);
-    expect(result.totalFatG).toBeCloseTo(166.67, 1);
+    expect(result.proteinG).toBe(280);
+    expect(result.carbsG).toBe(130);
+    expect(result.totalFatG).toBeCloseTo(175);
+    expect(result.fiberG).toBeCloseTo(70);
   });
 
   it('rejects goal directions that conflict with target weight', () => {

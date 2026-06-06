@@ -5,6 +5,11 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 const KCAL_PER_KG = 7700;
 const MIN_TARGET_CALORIES = 1200;
 const MAX_TARGET_CALORIES = 5000;
+const PROTEIN_MIN_G_PER_KG = 0.8;
+const FAT_MIN_G_PER_KG = 0.5;
+const CARB_MIN_G = 130;
+const FIBER_G_PER_1000_KCAL = 14;
+const WATER_ML_PER_KG = 30;
 
 const activityFactors: Record<ActivityLevel, number> = {
   sedentary: 1.2,
@@ -34,7 +39,10 @@ export class NutritionTargetService {
           ? dailyTotalBurnKcal + dailyEnergyAdjustmentKcal
           : dailyTotalBurnKcal;
     const targetCalories = Math.min(MAX_TARGET_CALORIES, Math.max(MIN_TARGET_CALORIES, rawTargetCalories));
-    const totalFatG = (targetCalories * 0.3) / 9;
+    const proteinG = profile.weightKg * PROTEIN_MIN_G_PER_KG;
+    const carbsG = CARB_MIN_G;
+    const totalFatG = profile.weightKg * FAT_MIN_G_PER_KG;
+    const fiberG = (targetCalories / 1000) * FIBER_G_PER_1000_KCAL;
     return {
       startWeightKg: profile.weightKg,
       targetWeightKg: profile.targetWeightKg,
@@ -46,16 +54,16 @@ export class NutritionTargetService {
       dailyTotalBurnKcal,
       dailyEnergyAdjustmentKcal,
       targetCalories,
-      proteinG: (targetCalories * 0.3) / 4,
-      carbsG: (targetCalories * 0.4) / 4,
+      proteinG,
+      carbsG,
       fatG: totalFatG,
       totalFatG,
-      fiberG: 25,
-      waterMl: profile.weightKg * 35,
+      fiberG,
+      waterMl: profile.weightKg * WATER_ML_PER_KG,
       saturatedFatLimitG: (targetCalories * 0.1) / 9,
       omega3TargetG: profile.gender === Gender.male ? 1.6 : 1.1,
       transFatLimitG: 0,
-      macroRatio: '30/40/30',
+      macroRatio: 'minimums',
       calculatedAt: new Date(),
     };
   }
