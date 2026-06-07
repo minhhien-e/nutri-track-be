@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { ActivityLevel, Gender, Goal } from '@prisma/client';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { ActivityLevel, Gender, Goal } from "@prisma/client";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 
 const KCAL_PER_KG = 7700;
 const MIN_TARGET_CALORIES = 1200;
 const MAX_TARGET_CALORIES = 5000;
-export const MACRO_FORMULA_VERSION = 'goal_activity_v1';
+export const MACRO_FORMULA_VERSION = "goal_activity_v1";
 const BASE_ACTIVITY_FACTOR = 1.2;
 const FAT_MIN_G_PER_KG = 0.5;
 const FIBER_G_PER_1000_KCAL = 14;
@@ -51,31 +51,54 @@ const carbFloorByGoal: Record<Goal, number> = {
 export class NutritionTargetService {
   calculate(profile: UpdateProfileDto) {
     this.validateGoalDirection(profile);
+    const startDate = this.startOfDay(profile.startDate ?? new Date());
+    const targetDate = this.startOfDay(profile.targetDate);
     const genderOffset = profile.gender === Gender.male ? 5 : -161;
-    const bmr = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age + genderOffset;
+    const bmr =
+      10 * profile.weightKg +
+      6.25 * profile.heightCm -
+      5 * profile.age +
+      genderOffset;
     const dailyBaseBurnKcal = bmr;
     const dailyActivityBurnKcal = bmr * (BASE_ACTIVITY_FACTOR - 1);
     const dailyTotalBurnKcal = dailyBaseBurnKcal + dailyActivityBurnKcal;
     const tdee = dailyTotalBurnKcal;
-    const days = Math.max(1, Math.ceil((profile.targetDate.getTime() - Date.now()) / 86_400_000));
+    const days = Math.max(
+      1,
+      Math.ceil((targetDate.getTime() - startDate.getTime()) / 86_400_000),
+    );
     const dailyEnergyAdjustmentKcal =
-      profile.goal === Goal.maintainWeight ? 0 : (Math.abs(profile.weightKg - profile.targetWeightKg) * KCAL_PER_KG) / days;
+      profile.goal === Goal.maintainWeight
+        ? 0
+        : (Math.abs(profile.weightKg - profile.targetWeightKg) * KCAL_PER_KG) /
+          days;
     const rawTargetCalories =
       profile.goal === Goal.loseWeight
         ? dailyTotalBurnKcal - dailyEnergyAdjustmentKcal
         : profile.goal === Goal.gainWeight
           ? dailyTotalBurnKcal + dailyEnergyAdjustmentKcal
           : dailyTotalBurnKcal;
-    const targetCalories = Math.min(MAX_TARGET_CALORIES, Math.max(MIN_TARGET_CALORIES, rawTargetCalories));
-    const proteinG = profile.weightKg * proteinByGoalAndActivity[profile.goal][profile.activityLevel];
-    const macros = this.calculateMacros(profile.goal, profile.weightKg, targetCalories, proteinG);
+    const targetCalories = Math.min(
+      MAX_TARGET_CALORIES,
+      Math.max(MIN_TARGET_CALORIES, rawTargetCalories),
+    );
+    const proteinG =
+      profile.weightKg *
+      proteinByGoalAndActivity[profile.goal][profile.activityLevel];
+    const macros = this.calculateMacros(
+      profile.goal,
+      profile.weightKg,
+      targetCalories,
+      proteinG,
+    );
     const carbsG = macros.carbsG;
     const totalFatG = macros.totalFatG;
     const fiberG = (targetCalories / 1000) * FIBER_G_PER_1000_KCAL;
     return {
+      startDate,
       startWeightKg: profile.weightKg,
       targetWeightKg: profile.targetWeightKg,
-      targetDate: profile.targetDate,
+      targetDate,
       bmr,
       tdee,
       dailyBaseBurnKcal,
@@ -97,7 +120,12 @@ export class NutritionTargetService {
     };
   }
 
-  private calculateMacros(goal: Goal, weightKg: number, targetCalories: number, proteinG: number) {
+  private calculateMacros(
+    goal: Goal,
+    weightKg: number,
+    targetCalories: number,
+    proteinG: number,
+  ) {
     const proteinCalories = proteinG * 4;
     const fatBaseG = weightKg * fatByGoal[goal];
     const fatMinG = weightKg * FAT_MIN_G_PER_KG;
@@ -106,8 +134,12 @@ export class NutritionTargetService {
     let carbsG = (targetCalories - proteinCalories - totalFatG * 9) / 4;
 
     if (carbsG < carbFloorG) {
-      const fatAllowedWithCarbFloor = (targetCalories - proteinCalories - carbFloorG * 4) / 9;
-      totalFatG = Math.max(fatMinG, Math.min(fatBaseG, fatAllowedWithCarbFloor));
+      const fatAllowedWithCarbFloor =
+        (targetCalories - proteinCalories - carbFloorG * 4) / 9;
+      totalFatG = Math.max(
+        fatMinG,
+        Math.min(fatBaseG, fatAllowedWithCarbFloor),
+      );
       carbsG = (targetCalories - proteinCalories - totalFatG * 9) / 4;
     }
 
@@ -118,15 +150,35 @@ export class NutritionTargetService {
   }
 
   private validateGoalDirection(profile: UpdateProfileDto) {
-    const targetTime = profile.targetDate.getTime();
-    if (profile.goal !== Goal.maintainWeight && targetTime <= Date.now()) {
-      throw new BadRequestException('Target date must be in the future');
+    const startDate = this.startOfDay(profile.startDate ?? new Date());
+    const targetDate = this.startOfDay(profile.targetDate);
+    if (
+      profile.goal !== Goal.maintainWeight &&
+      targetDate.getTime() <= startDate.getTime()
+    ) {
+      throw new BadRequestException("Target date must be after start date");
     }
-    if (profile.goal === Goal.loseWeight && profile.targetWeightKg >= profile.weightKg) {
-      throw new BadRequestException('Lose weight goal requires target weight lower than current weight');
+    if (
+      profile.goal === Goal.loseWeight &&
+      profile.targetWeightKg >= profile.weightKg
+    ) {
+      throw new BadRequestException(
+        "Lose weight goal requires target weight lower than current weight",
+      );
     }
-    if (profile.goal === Goal.gainWeight && profile.targetWeightKg <= profile.weightKg) {
-      throw new BadRequestException('Gain weight goal requires target weight higher than current weight');
+    if (
+      profile.goal === Goal.gainWeight &&
+      profile.targetWeightKg <= profile.weightKg
+    ) {
+      throw new BadRequestException(
+        "Gain weight goal requires target weight higher than current weight",
+      );
     }
+  }
+
+  private startOfDay(value: Date) {
+    return new Date(
+      Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
+    );
   }
 }

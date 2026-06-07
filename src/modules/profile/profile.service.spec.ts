@@ -18,6 +18,7 @@ describe("ProfileService target overview calories", () => {
   const nutritionTarget = {
     id: "target-1",
     userId: "user-1",
+    startDate: new Date("2026-06-01T00:00:00.000Z"),
     startWeightKg: 72,
     targetWeightKg: 68,
     targetDate: new Date(Date.now() + 10 * 86_400_000),
@@ -47,12 +48,10 @@ describe("ProfileService target overview calories", () => {
   ) {
     const prisma = {
       userProfile: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue({
-            ...profile,
-            goal: overrides.goal ?? profile.goal,
-          }),
+        findUnique: jest.fn().mockResolvedValue({
+          ...profile,
+          goal: overrides.goal ?? profile.goal,
+        }),
       },
       nutritionTarget: {
         findUnique: jest
@@ -264,6 +263,69 @@ describe("ProfileService target overview calories", () => {
       expect.objectContaining({
         where: { userId: "user-1" },
         update: expect.objectContaining({ macroRatio: "goal_activity_v1" }),
+      }),
+    );
+  });
+
+  it("builds a target journey without weekly weight logs", async () => {
+    const service = createService(null);
+    const prisma = (service as unknown as { prisma: any }).prisma;
+    prisma.dailyRecord.findMany = jest.fn().mockResolvedValue([
+      {
+        dateKey: "2026-06-01",
+        exerciseCalories: 100,
+        mealEntries: [{ calories: 1800 }],
+      },
+      {
+        dateKey: "2026-06-02",
+        exerciseCalories: 0,
+        mealEntries: [{ calories: 2200 }],
+      },
+    ]);
+    prisma.weeklyWeightLog = {
+      findMany: jest.fn().mockResolvedValue([]),
+    };
+
+    const result = await service.getTargetJourney("user-1");
+
+    expect(result?.dailyEnergyPoints[0]).toEqual(
+      expect.objectContaining({
+        dateKey: "2026-06-01",
+        consumedCalories: 1800,
+        exerciseCalories: 100,
+        actualDeficitKcal: 700,
+        cumulativeDeficitKcal: 700,
+      }),
+    );
+    expect(result?.dailyEnergyPoints[1].actualDeficitKcal).toBe(200);
+    expect(result?.weeklyWeightPoints[0]).toEqual(
+      expect.objectContaining({
+        weekKey: "2026-W23",
+        loggedWeightKg: null,
+      }),
+    );
+    expect(result?.weeklyWeightPoints[0].projectedWeightKg).toBeLessThan(72);
+  });
+
+  it("upserts weekly weight logs by ISO week", async () => {
+    const service = createService(null);
+    const prisma = (service as unknown as { prisma: any }).prisma;
+    prisma.weeklyWeightLog = {
+      upsert: jest
+        .fn()
+        .mockResolvedValue({ weekKey: "2026-W24", weightKg: 70.5 }),
+    };
+
+    const result = await service.upsertWeeklyWeightLog("user-1", {
+      measuredDate: new Date("2026-06-14T12:00:00.000Z"),
+      weightKg: 70.5,
+    });
+
+    expect(result.weekKey).toBe("2026-W24");
+    expect(prisma.weeklyWeightLog.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId_weekKey: { userId: "user-1", weekKey: "2026-W24" } },
+        update: expect.objectContaining({ weightKg: 70.5 }),
       }),
     );
   });

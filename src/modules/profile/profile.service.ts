@@ -1,9 +1,16 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { Goal, NutritionTarget } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { CalculateNutritionTargetDto } from "./dto/calculate-nutrition-target.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
-import { MACRO_FORMULA_VERSION, NutritionTargetService } from "./nutrition-target.service";
+import { UpsertWeeklyWeightLogDto } from "./dto/upsert-weekly-weight-log.dto";
+import {
+  MACRO_FORMULA_VERSION,
+  NutritionTargetService,
+} from "./nutrition-target.service";
+
+const DAY_MS = 86_400_000;
+const KCAL_PER_KG = 7700;
 
 @Injectable()
 export class ProfileService {
@@ -50,6 +57,138 @@ export class ProfileService {
       create: { userId, ...target },
     });
     return { profile, nutritionTarget };
+  }
+
+  async getTargetJourney(userId: string) {
+    const [profile, storedNutritionTarget] = await Promise.all([
+      this.prisma.userProfile.findUnique({ where: { userId } }),
+      this.prisma.nutritionTarget.findUnique({ where: { userId } }),
+    ]);
+    if (!profile || !storedNutritionTarget) return null;
+    const nutritionTarget = await this.normalizeNutritionTarget(
+      userId,
+      profile,
+      storedNutritionTarget,
+    );
+
+    const startDate = this.startOfDay(
+      nutritionTarget.startDate ?? nutritionTarget.calculatedAt,
+    );
+    const targetDate = this.startOfDay(nutritionTarget.targetDate);
+    const dayCount = Math.max(
+      0,
+      Math.round((targetDate.getTime() - startDate.getTime()) / DAY_MS),
+    );
+    const dateKeys = Array.from({ length: dayCount + 1 }, (_, index) =>
+      this.dateKey(addDays(startDate, index)),
+    );
+    const records = await this.prisma.dailyRecord.findMany({
+      where: { userId, dateKey: { in: dateKeys } },
+      include: { mealEntries: true },
+      orderBy: { dateKey: "asc" },
+    });
+    const recordsByDate = new Map(
+      records.map((record) => [record.dateKey, record]),
+    );
+    const dailyBurnKcal =
+      nutritionTarget.dailyTotalBurnKcal || nutritionTarget.tdee;
+    const plannedDeficitKcal =
+      profile.goal === Goal.maintainWeight
+        ? 0
+        : profile.goal === Goal.loseWeight
+          ? nutritionTarget.dailyEnergyAdjustmentKcal
+          : -nutritionTarget.dailyEnergyAdjustmentKcal;
+
+    let cumulativeDeficitKcal = 0;
+    const cumulativeByDateKey = new Map<string, number>();
+    const dailyEnergyPoints = dateKeys.map((dateKey) => {
+      const record = recordsByDate.get(dateKey);
+      const consumedCalories = (record?.mealEntries ?? []).reduce(
+        (sum, entry) => sum + entry.calories,
+        0,
+      );
+      const exerciseCalories = record?.exerciseCalories ?? 0;
+      const actualDeficitKcal =
+        dailyBurnKcal + exerciseCalories - consumedCalories;
+      cumulativeDeficitKcal += actualDeficitKcal;
+      cumulativeByDateKey.set(dateKey, cumulativeDeficitKcal);
+      return {
+        dateKey,
+        consumedCalories,
+        exerciseCalories,
+        dailyBurnKcal,
+        actualDeficitKcal,
+        plannedDeficitKcal,
+        cumulativeDeficitKcal,
+      };
+    });
+
+    const weeklyLogs = await this.prisma.weeklyWeightLog.findMany({
+      where: { userId, measuredDate: { gte: startDate, lte: targetDate } },
+      orderBy: { measuredDate: "asc" },
+    });
+    const logsByWeek = new Map(weeklyLogs.map((log) => [log.weekKey, log]));
+    const totalWeightDelta =
+      nutritionTarget.targetWeightKg - nutritionTarget.startWeightKg;
+    const weeklyWeightPoints = this.weekStartsBetween(
+      startDate,
+      targetDate,
+    ).map((weekStart) => {
+      const weekEnd = minDate(addDays(weekStart, 6), targetDate);
+      const weekKey = this.isoWeekKey(weekStart);
+      const elapsedDays = Math.max(
+        0,
+        Math.min(
+          dayCount,
+          Math.round((weekEnd.getTime() - startDate.getTime()) / DAY_MS),
+        ),
+      );
+      const progress = dayCount <= 0 ? 1 : elapsedDays / dayCount;
+      const plannedWeightKg =
+        nutritionTarget.startWeightKg + totalWeightDelta * progress;
+      const cumulative = cumulativeByDateKey.get(this.dateKey(weekEnd)) ?? 0;
+      const projectedWeightKg =
+        nutritionTarget.startWeightKg - cumulative / KCAL_PER_KG;
+      const log = logsByWeek.get(weekKey);
+      return {
+        weekKey,
+        weekStartDate: weekStart.toISOString(),
+        weekEndDate: weekEnd.toISOString(),
+        plannedWeightKg,
+        projectedWeightKg,
+        loggedWeightKg: log?.weightKg ?? null,
+        measuredDate: log?.measuredDate?.toISOString() ?? null,
+      };
+    });
+
+    return {
+      startDate: startDate.toISOString(),
+      targetDate: targetDate.toISOString(),
+      startWeightKg: nutritionTarget.startWeightKg,
+      targetWeightKg: nutritionTarget.targetWeightKg,
+      dailyEnergyPoints,
+      weeklyWeightPoints,
+    };
+  }
+
+  upsertWeeklyWeightLog(userId: string, dto: UpsertWeeklyWeightLogDto) {
+    const measuredDate = this.startOfDay(dto.measuredDate);
+    const weekKey = this.isoWeekKey(measuredDate);
+    return this.prisma.weeklyWeightLog.upsert({
+      where: { userId_weekKey: { userId, weekKey } },
+      update: { measuredDate, weightKg: dto.weightKg },
+      create: { userId, weekKey, measuredDate, weightKg: dto.weightKg },
+    });
+  }
+
+  async deleteWeeklyWeightLog(userId: string, weekKey: string) {
+    if (!/^\d{4}-W\d{2}$/.test(weekKey)) {
+      throw new BadRequestException("Invalid week key");
+    }
+    await this.prisma.weeklyWeightLog.deleteMany({
+      where: { userId, weekKey },
+    });
+    return { deleted: true };
   }
 
   async getTargetOverview(userId: string) {
@@ -239,6 +378,7 @@ export class ProfileService {
         gender: profile.gender,
         heightCm: profile.heightCm,
         weightKg: profile.weightKg,
+        startDate: target.startDate ?? target.calculatedAt,
         targetWeightKg: target.targetWeightKg,
         targetDate: target.targetDate,
         activityLevel: profile.activityLevel,
@@ -252,6 +392,42 @@ export class ProfileService {
     } catch {
       return target;
     }
+  }
+
+  private startOfDay(value: Date) {
+    return new Date(
+      Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
+    );
+  }
+
+  private dateKey(value: Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  private isoWeekKey(value: Date) {
+    const date = this.startOfDay(value);
+    const day = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const week = Math.ceil(
+      ((date.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7,
+    );
+    return `${date.getUTCFullYear()}-W${week.toString().padStart(2, "0")}`;
+  }
+
+  private weekStartsBetween(startDate: Date, targetDate: Date) {
+    const first = this.startOfDay(startDate);
+    const day = first.getUTCDay() || 7;
+    first.setUTCDate(first.getUTCDate() - day + 1);
+    const weeks: Date[] = [];
+    for (
+      let cursor = first;
+      cursor.getTime() <= targetDate.getTime();
+      cursor = addDays(cursor, 7)
+    ) {
+      weeks.push(cursor);
+    }
+    return weeks;
   }
 
   private getStatusKeys(
@@ -275,4 +451,12 @@ export class ProfileService {
       statusKeys.push("has_trans_fat");
     return statusKeys.length ? statusKeys : ["on_track"];
   }
+}
+
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function minDate(a: Date, b: Date) {
+  return a.getTime() <= b.getTime() ? a : b;
 }

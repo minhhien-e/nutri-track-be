@@ -1,7 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ActivityLevel, Gender, Goal } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsInt, IsNumber, Max, Min } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { ActivityLevel, Gender, Goal } from "@prisma/client";
+import { Type } from "class-transformer";
+import {
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  Max,
+  Min,
+} from "class-validator";
 
 export class UpdateProfileDto {
   @ApiProperty({ example: 28 })
@@ -26,13 +34,19 @@ export class UpdateProfileDto {
   @Max(400)
   weightKg: number;
 
+  @ApiProperty({ example: "2026-06-07T00:00:00.000Z", required: false })
+  @Type(() => Date)
+  @IsOptional()
+  @IsDate()
+  startDate?: Date;
+
   @ApiProperty({ example: 63 })
   @IsNumber()
   @Min(20)
   @Max(400)
   targetWeightKg: number;
 
-  @ApiProperty({ example: '2026-09-12T00:00:00.000Z' })
+  @ApiProperty({ example: "2026-09-12T00:00:00.000Z" })
   @Type(() => Date)
   @IsDate()
   targetDate: Date;
