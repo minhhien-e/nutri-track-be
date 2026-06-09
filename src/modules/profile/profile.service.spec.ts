@@ -298,6 +298,13 @@ describe("ProfileService target overview calories", () => {
       }),
     );
     expect(result?.dailyEnergyPoints[1].actualDeficitKcal).toBe(200);
+    expect(result?.dailyEnergyPoints[2]).toEqual(
+      expect.objectContaining({
+        hasLoggedData: false,
+        actualDeficitKcal: 0,
+        cumulativeDeficitKcal: 900,
+      }),
+    );
     expect(result?.weeklyWeightPoints[0]).toEqual(
       expect.objectContaining({
         weekKey: "2026-W23",
@@ -305,6 +312,31 @@ describe("ProfileService target overview calories", () => {
       }),
     );
     expect(result?.weeklyWeightPoints[0].projectedWeightKg).toBeLessThan(72);
+  });
+
+  it("does not treat an empty daily record as a full-day deficit", async () => {
+    const service = createService(null);
+    const prisma = (service as unknown as { prisma: any }).prisma;
+    prisma.dailyRecord.findMany = jest.fn().mockResolvedValue([
+      {
+        dateKey: "2026-06-01",
+        exerciseCalories: 0,
+        mealEntries: [],
+      },
+    ]);
+    prisma.weeklyWeightLog = {
+      findMany: jest.fn().mockResolvedValue([]),
+    };
+
+    const result = await service.getTargetJourney("user-1");
+
+    expect(result?.dailyEnergyPoints[0]).toEqual(
+      expect.objectContaining({
+        hasLoggedData: false,
+        actualDeficitKcal: 0,
+        cumulativeDeficitKcal: 0,
+      }),
+    );
   });
 
   it("upserts weekly weight logs by ISO week", async () => {

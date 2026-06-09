@@ -103,17 +103,22 @@ export class ProfileService {
     const cumulativeByDateKey = new Map<string, number>();
     const dailyEnergyPoints = dateKeys.map((dateKey) => {
       const record = recordsByDate.get(dateKey);
+      const hasLoggedData =
+        record != null &&
+        (record.mealEntries.length > 0 || record.exerciseCalories > 0);
       const consumedCalories = (record?.mealEntries ?? []).reduce(
         (sum, entry) => sum + entry.calories,
         0,
       );
       const exerciseCalories = record?.exerciseCalories ?? 0;
-      const actualDeficitKcal =
-        dailyBurnKcal + exerciseCalories - consumedCalories;
+      const actualDeficitKcal = hasLoggedData
+        ? dailyBurnKcal + exerciseCalories - consumedCalories
+        : 0;
       cumulativeDeficitKcal += actualDeficitKcal;
       cumulativeByDateKey.set(dateKey, cumulativeDeficitKcal);
       return {
         dateKey,
+        hasLoggedData,
         consumedCalories,
         exerciseCalories,
         dailyBurnKcal,
