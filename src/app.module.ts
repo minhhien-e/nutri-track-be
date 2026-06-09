@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DiaryModule } from './modules/diary/diary.module';
 import { FoodsModule } from './modules/foods/foods.module';
 import { HealthModule } from './modules/health/health.module';
+import { MealPlansModule } from './modules/meal-plans/meal-plans.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './database/prisma.module';
@@ -27,6 +28,7 @@ import { envValidationSchema } from './config/env.validation';
     ProfileModule,
     FoodsModule,
     DiaryModule,
+    MealPlansModule,
     HealthModule,
   ],
 })

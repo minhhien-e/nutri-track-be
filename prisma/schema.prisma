@@ -44,6 +44,11 @@ enum FoodSource {
   custom
 }
 
+enum MealPlanDefaultScope {
+  day
+  week
+}
+
 model User {
   id               String            @id @default(uuid())
   email            String            @unique
@@ -58,6 +63,7 @@ model User {
   weeklyWeightLogs WeeklyWeightLog[]
   recentFoods      RecentFood[]
   customFoods      FoodItem[]        @relation("CustomFoods")
+  mealPlanDefaults MealPlanDefault[]
 }
 
 model UserProfile {
@@ -116,30 +122,31 @@ model WeeklyWeightLog {
 }
 
 model FoodItem {
-  id                  String       @id @default(uuid())
-  name                String
-  brandName           String?
-  servingSizeG        Float
-  caloriesPer100g     Float
-  proteinPer100g      Float
-  carbsPer100g        Float
-  fatPer100g          Float
-  totalFatPer100g     Float        @default(0)
-  saturatedFatPer100g Float        @default(0)
-  omega3Per100g       Float        @default(0)
-  transFatPer100g     Float        @default(0)
-  fiberPer100g        Float        @default(0)
-  source              FoodSource
-  imageAssetPath      String?
-  category            String?
-  displayTag          String?
-  isActive            Boolean      @default(true)
-  ownerUserId         String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  ownerUser           User?        @relation("CustomFoods", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  mealEntries         MealEntry[]
-  recentFoods         RecentFood[]
+  id                   String                @id @default(uuid())
+  name                 String
+  brandName            String?
+  servingSizeG         Float
+  caloriesPer100g      Float
+  proteinPer100g       Float
+  carbsPer100g         Float
+  fatPer100g           Float
+  totalFatPer100g      Float                 @default(0)
+  saturatedFatPer100g  Float                 @default(0)
+  omega3Per100g        Float                 @default(0)
+  transFatPer100g      Float                 @default(0)
+  fiberPer100g         Float                 @default(0)
+  source               FoodSource
+  imageAssetPath       String?
+  category             String?
+  displayTag           String?
+  isActive             Boolean               @default(true)
+  ownerUserId          String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  ownerUser            User?                 @relation("CustomFoods", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  mealEntries          MealEntry[]
+  recentFoods          RecentFood[]
+  mealPlanDefaultItems MealPlanDefaultItem[]
 
   @@index([name])
   @@index([category])
@@ -190,4 +197,38 @@ model RecentFood {
 
   @@unique([userId, foodItemId])
   @@index([userId, createdAt])
+}
+
+model MealPlanDefault {
+  id        String                @id @default(uuid())
+  userId    String
+  name      String
+  scope     MealPlanDefaultScope
+  enabled   Boolean               @default(true)
+  startDate DateTime
+  endDate   DateTime
+  dateKey   String?
+  weekday   Int?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     MealPlanDefaultItem[]
+
+  @@index([userId, enabled, scope])
+  @@index([dateKey])
+  @@index([weekday])
+}
+
+model MealPlanDefaultItem {
+  id                String          @id @default(uuid())
+  mealPlanDefaultId String
+  foodItemId        String
+  mealType          MealType
+  grams             Float
+  sortOrder         Int             @default(0)
+  mealPlanDefault   MealPlanDefault @relation(fields: [mealPlanDefaultId], references: [id], onDelete: Cascade)
+  foodItem          FoodItem        @relation(fields: [foodItemId], references: [id], onDelete: Restrict)
+
+  @@index([mealPlanDefaultId])
+  @@index([foodItemId])
 }
