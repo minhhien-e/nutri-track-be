@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { FoodSource, Prisma } from '@prisma/client';
-import { FoodsRepository } from '../../foods/foods.repository';
-import { FoodsService } from '../../foods/foods.service';
-import { AdminFoodQueryDto } from './dto/admin-food-query.dto';
-import { CreateAdminFoodDto, UpdateAdminFoodDto } from './dto/upsert-admin-food.dto';
+import { Injectable } from "@nestjs/common";
+import { FoodSource, Prisma } from "@prisma/client";
+import { FoodsRepository } from "../../foods/foods.repository";
+import { FoodsService } from "../../foods/foods.service";
+import { AdminFoodQueryDto } from "./dto/admin-food-query.dto";
+import {
+  CreateAdminFoodDto,
+  UpdateAdminFoodDto,
+} from "./dto/upsert-admin-food.dto";
 
 @Injectable()
 export class AdminFoodsService {
@@ -25,7 +28,7 @@ export class AdminFoodsService {
   }
 
   create(dto: CreateAdminFoodDto) {
-    return this.foodsRepository.createCatalog({
+    return this.foodsRepository.upsertCatalog({
       ...this.toCreateData(dto),
       source: dto.source ?? FoodSource.adminCatalog,
       isActive: true,
@@ -46,7 +49,9 @@ export class AdminFoodsService {
     return this.updateStatus(id, false);
   }
 
-  private toCreateData(dto: CreateAdminFoodDto): Prisma.FoodItemUncheckedCreateInput {
+  private toCreateData(
+    dto: CreateAdminFoodDto,
+  ): Prisma.FoodItemUncheckedCreateInput {
     return {
       name: dto.name,
       brandName: dto.brandName,
@@ -68,8 +73,13 @@ export class AdminFoodsService {
     };
   }
 
-  private toUpdateData(dto: UpdateAdminFoodDto): Prisma.FoodItemUncheckedUpdateInput {
-    const data: Prisma.FoodItemUncheckedUpdateInput = { ...dto, ownerUserId: null };
+  private toUpdateData(
+    dto: UpdateAdminFoodDto,
+  ): Prisma.FoodItemUncheckedUpdateInput {
+    const data: Prisma.FoodItemUncheckedUpdateInput = {
+      ...dto,
+      ownerUserId: null,
+    };
     if (dto.totalFatPer100g !== undefined) {
       data.fatPer100g = dto.totalFatPer100g;
       data.totalFatPer100g = dto.totalFatPer100g;
