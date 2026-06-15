@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './modules/admin/admin.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DiaryModule } from './modules/diary/diary.module';
 import { FoodsModule } from './modules/foods/foods.module';
@@ -23,6 +24,7 @@ import { envValidationSchema } from './config/env.validation';
     }),
     PrismaModule,
     AdminModule,
+    AnalyticsModule,
     UsersModule,
     AuthModule,
     ProfileModule,
