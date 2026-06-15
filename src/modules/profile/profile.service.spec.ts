@@ -93,7 +93,7 @@ describe("ProfileService target overview calories", () => {
     expect(result?.today.exerciseCaloriesToBurn).toBe(0);
   });
 
-  it("uses exercise credit when calculating remaining food calories", async () => {
+  it("uses goal-based exercise compensation for recommended intake", async () => {
     const service = createService({
       waterMl: 1000,
       exerciseCalories: 600,
@@ -115,8 +115,10 @@ describe("ProfileService target overview calories", () => {
     const result = await service.getTargetOverview("user-1");
 
     expect(result?.today.baseRemainingFoodCalories).toBe(1822);
-    expect(result?.today.exerciseCreditCalories).toBe(600);
-    expect(result?.today.remainingFoodCalories).toBe(2422);
+    expect(result?.today.exerciseCreditCalories).toBe(240);
+    expect(result?.today.exerciseCompensationKcal).toBe(240);
+    expect(result?.today.recommendedIntakeKcal).toBe(2240);
+    expect(result?.today.remainingFoodCalories).toBe(2062);
   });
 
   it("returns exercise burn needed after applying exercise credit", async () => {
@@ -140,8 +142,8 @@ describe("ProfileService target overview calories", () => {
 
     const result = await service.getTargetOverview("user-1");
 
-    expect(result?.today.overTargetCalories).toBe(200);
-    expect(result?.today.exerciseCaloriesToBurn).toBe(200);
+    expect(result?.today.overTargetCalories).toBe(260);
+    expect(result?.today.exerciseCaloriesToBurn).toBe(260);
     expect(result?.today.projectedNetCalories).toBe(2200);
   });
 
@@ -256,13 +258,13 @@ describe("ProfileService target overview calories", () => {
 
     const result = await service.getNutritionTarget("user-1");
 
-    expect(result?.macroRatio).toBe("goal_activity_v1");
+    expect(result?.macroRatio).toBe("adaptive_tdee_v1");
     expect(result?.proteinG).toBeCloseTo(119);
     expect(result?.totalFatG).toBeCloseTo(42);
     expect(prisma.nutritionTarget.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user-1" },
-        update: expect.objectContaining({ macroRatio: "goal_activity_v1" }),
+        update: expect.objectContaining({ macroRatio: "adaptive_tdee_v1" }),
       }),
     );
   });
@@ -335,6 +337,66 @@ describe("ProfileService target overview calories", () => {
         hasLoggedData: false,
         actualDeficitKcal: 0,
         cumulativeDeficitKcal: 0,
+      }),
+    );
+  });
+
+  it("derives actual TDEE from logged intake and weight change", async () => {
+    const adaptiveTarget = {
+      ...nutritionTarget,
+      estimatedTdee: 2400,
+      actualTdee: null,
+      actualTdeeCalculatedAt: null,
+      actualTdeeWindowDays: null,
+      macroRatio: "adaptive_tdee_v1",
+      targetDate: new Date("2026-12-31T00:00:00.000Z"),
+    };
+    const mealRecords = Array.from({ length: 7 }, (_, index) => ({
+      dateKey: `2026-06-${(index + 1).toString().padStart(2, "0")}`,
+      mealEntries: [{ calories: 2200 }],
+    }));
+    const prisma = {
+      userProfile: {
+        findUnique: jest.fn().mockResolvedValue(profile),
+      },
+      nutritionTarget: {
+        findUnique: jest.fn().mockResolvedValue(adaptiveTarget),
+        update: jest.fn(({ data }) =>
+          Promise.resolve({ ...adaptiveTarget, ...data }),
+        ),
+      },
+      weeklyWeightLog: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            measuredDate: new Date("2026-06-01T00:00:00.000Z"),
+            weightKg: 72,
+          },
+          {
+            measuredDate: new Date("2026-07-01T00:00:00.000Z"),
+            weightKg: 70,
+          },
+        ]),
+      },
+      dailyRecord: {
+        findMany: jest.fn().mockResolvedValue(mealRecords),
+      },
+    };
+    const service = new ProfileService(
+      prisma as never,
+      new NutritionTargetService(),
+    );
+
+    const result = await service.getNutritionTarget("user-1");
+
+    expect(result?.actualTdee).toBeCloseTo(2713.33, 1);
+    expect(result?.tdee).toBeCloseTo(2713.33, 1);
+    expect(result?.actualTdeeWindowDays).toBe(30);
+    expect(prisma.nutritionTarget.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actualTdee: expect.closeTo(2713.33, 1),
+          actualTdeeWindowDays: 30,
+        }),
       }),
     );
   });

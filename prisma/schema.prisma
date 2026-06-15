@@ -80,31 +80,35 @@ model UserProfile {
 }
 
 model NutritionTarget {
-  id                        String   @id @default(uuid())
-  userId                    String   @unique
-  startDate                 DateTime @default(now())
-  startWeightKg             Float    @default(0)
-  targetWeightKg            Float    @default(0)
-  targetDate                DateTime @default(now())
+  id                        String    @id @default(uuid())
+  userId                    String    @unique
+  startDate                 DateTime  @default(now())
+  startWeightKg             Float     @default(0)
+  targetWeightKg            Float     @default(0)
+  targetDate                DateTime  @default(now())
   bmr                       Float
   tdee                      Float
-  dailyBaseBurnKcal         Float    @default(0)
-  dailyActivityBurnKcal     Float    @default(0)
-  dailyTotalBurnKcal        Float    @default(0)
-  dailyEnergyAdjustmentKcal Float    @default(0)
+  estimatedTdee             Float     @default(0)
+  actualTdee                Float?
+  actualTdeeCalculatedAt    DateTime?
+  actualTdeeWindowDays      Int?
+  dailyBaseBurnKcal         Float     @default(0)
+  dailyActivityBurnKcal     Float     @default(0)
+  dailyTotalBurnKcal        Float     @default(0)
+  dailyEnergyAdjustmentKcal Float     @default(0)
   targetCalories            Float
   proteinG                  Float
   carbsG                    Float
   fatG                      Float
-  totalFatG                 Float    @default(0)
-  fiberG                    Float    @default(25)
-  waterMl                   Float    @default(0)
-  saturatedFatLimitG        Float    @default(0)
-  omega3TargetG             Float    @default(0)
-  transFatLimitG            Float    @default(0)
+  totalFatG                 Float     @default(0)
+  fiberG                    Float     @default(25)
+  waterMl                   Float     @default(0)
+  saturatedFatLimitG        Float     @default(0)
+  omega3TargetG             Float     @default(0)
+  transFatLimitG            Float     @default(0)
   macroRatio                String
-  calculatedAt              DateTime @default(now())
-  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calculatedAt              DateTime  @default(now())
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WeeklyWeightLog {

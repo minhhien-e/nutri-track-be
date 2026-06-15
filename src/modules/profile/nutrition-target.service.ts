@@ -5,11 +5,30 @@ import { UpdateProfileDto } from "./dto/update-profile.dto";
 const KCAL_PER_KG = 7700;
 const MIN_TARGET_CALORIES = 1200;
 const MAX_TARGET_CALORIES = 5000;
-export const MACRO_FORMULA_VERSION = "goal_activity_v1";
-const BASE_ACTIVITY_FACTOR = 1.2;
+export const MACRO_FORMULA_VERSION = "adaptive_tdee_v1";
+const MAX_LOSS_DEFICIT_KCAL = 750;
+const MAX_LOSS_DEFICIT_TDEE_RATIO = 0.25;
+const MAX_GAIN_SURPLUS_KCAL = 500;
+const MAX_GAIN_SURPLUS_TDEE_RATIO = 0.15;
 const FAT_MIN_G_PER_KG = 0.5;
 const FIBER_G_PER_1000_KCAL = 14;
 const WATER_ML_PER_KG = 30;
+
+const activityFactor: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  lightlyActive: 1.35,
+  moderatelyActive: 1.55,
+  veryActive: 1.725,
+  extraActive: 1.9,
+};
+
+const activityWaterMl: Record<ActivityLevel, number> = {
+  sedentary: 0,
+  lightlyActive: 250,
+  moderatelyActive: 500,
+  veryActive: 750,
+  extraActive: 1000,
+};
 
 const proteinByGoalAndActivity: Record<Goal, Record<ActivityLevel, number>> = {
   loseWeight: {
@@ -49,7 +68,7 @@ const carbFloorByGoal: Record<Goal, number> = {
 
 @Injectable()
 export class NutritionTargetService {
-  calculate(profile: UpdateProfileDto) {
+  calculate(profile: UpdateProfileDto, options?: { actualTdee?: number | null }) {
     this.validateGoalDirection(profile);
     const startDate = this.startOfDay(profile.startDate ?? new Date());
     const targetDate = this.startOfDay(profile.targetDate);
@@ -60,18 +79,25 @@ export class NutritionTargetService {
       5 * profile.age +
       genderOffset;
     const dailyBaseBurnKcal = bmr;
-    const dailyActivityBurnKcal = bmr * (BASE_ACTIVITY_FACTOR - 1);
-    const dailyTotalBurnKcal = dailyBaseBurnKcal + dailyActivityBurnKcal;
-    const tdee = dailyTotalBurnKcal;
+    const estimatedTdee = bmr * activityFactor[profile.activityLevel];
+    const actualTdee = options?.actualTdee ?? null;
+    const tdee = actualTdee ?? estimatedTdee;
+    const dailyActivityBurnKcal = Math.max(0, tdee - dailyBaseBurnKcal);
+    const dailyTotalBurnKcal = tdee;
     const days = Math.max(
       1,
       Math.ceil((targetDate.getTime() - startDate.getTime()) / 86_400_000),
     );
-    const dailyEnergyAdjustmentKcal =
+    const rawDailyEnergyAdjustmentKcal =
       profile.goal === Goal.maintainWeight
         ? 0
         : (Math.abs(profile.weightKg - profile.targetWeightKg) * KCAL_PER_KG) /
           days;
+    const dailyEnergyAdjustmentKcal = this.clampDailyEnergyAdjustment(
+      profile.goal,
+      tdee,
+      rawDailyEnergyAdjustmentKcal,
+    );
     const rawTargetCalories =
       profile.goal === Goal.loseWeight
         ? dailyTotalBurnKcal - dailyEnergyAdjustmentKcal
@@ -101,6 +127,10 @@ export class NutritionTargetService {
       targetDate,
       bmr,
       tdee,
+      estimatedTdee,
+      actualTdee,
+      actualTdeeCalculatedAt: actualTdee == null ? null : new Date(),
+      actualTdeeWindowDays: null,
       dailyBaseBurnKcal,
       dailyActivityBurnKcal,
       dailyTotalBurnKcal,
@@ -111,13 +141,37 @@ export class NutritionTargetService {
       fatG: totalFatG,
       totalFatG,
       fiberG,
-      waterMl: profile.weightKg * WATER_ML_PER_KG,
+      waterMl:
+        profile.weightKg * WATER_ML_PER_KG +
+        activityWaterMl[profile.activityLevel],
       saturatedFatLimitG: (targetCalories * 0.1) / 9,
       omega3TargetG: profile.gender === Gender.male ? 1.6 : 1.1,
       transFatLimitG: 0,
       macroRatio: MACRO_FORMULA_VERSION,
       calculatedAt: new Date(),
     };
+  }
+
+  private clampDailyEnergyAdjustment(
+    goal: Goal,
+    tdee: number,
+    rawAdjustmentKcal: number,
+  ) {
+    if (goal === Goal.loseWeight) {
+      return Math.min(
+        rawAdjustmentKcal,
+        MAX_LOSS_DEFICIT_KCAL,
+        tdee * MAX_LOSS_DEFICIT_TDEE_RATIO,
+      );
+    }
+    if (goal === Goal.gainWeight) {
+      return Math.min(
+        rawAdjustmentKcal,
+        MAX_GAIN_SURPLUS_KCAL,
+        tdee * MAX_GAIN_SURPLUS_TDEE_RATIO,
+      );
+    }
+    return 0;
   }
 
   private calculateMacros(

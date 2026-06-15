@@ -5,6 +5,11 @@ import { DiaryTotalsService } from '../diary/diary-totals.service';
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
+const exerciseCompensationRatio = {
+  loseWeight: 0.4,
+  maintainWeight: 0.7,
+  gainWeight: 0.9,
+} as const;
 
 type RecordWithEntries = DailyRecord & { mealEntries: MealEntry[] };
 type TrendDirection = 'up' | 'down' | 'flat';
@@ -108,6 +113,10 @@ export class AnalyticsService {
         exerciseCalories: compact.exerciseCalories,
         dailyBurnKcal: compact.dailyBurnKcal,
         deficitOrSurplusKcal: compact.deficitOrSurplusKcal,
+        plannedDeficitOrSurplusKcal: compact.plannedDeficitOrSurplusKcal,
+        recommendedIntakeKcal: compact.recommendedIntakeKcal,
+        exerciseCompensationKcal: compact.exerciseCompensationKcal,
+        planGapKcal: compact.planGapKcal,
         estimatedFatKg: Math.abs(compact.deficitOrSurplusKcal) / KCAL_PER_KG,
       },
       scores,
@@ -124,7 +133,14 @@ export class AnalyticsService {
     const waterMl = record?.waterMl ?? 0;
     const exerciseCalories = record?.exerciseCalories ?? 0;
     const dailyBurnKcal = dailyBurn(context.target);
+    const targetCalories = context.target?.targetCalories ?? 0;
+    const goal = context.profile?.goal;
+    const compensationRatio = goal ? exerciseCompensationRatio[goal] : 0;
+    const exerciseCompensationKcal = exerciseCalories * compensationRatio;
+    const recommendedIntakeKcal = targetCalories + exerciseCompensationKcal;
+    const plannedDeficitOrSurplusKcal = dailyBurnKcal - targetCalories;
     const deficitOrSurplusKcal = dailyBurnKcal + exerciseCalories - totals.calories;
+    const planGapKcal = deficitOrSurplusKcal - plannedDeficitOrSurplusKcal;
     return {
       dateKey,
       calories: totals.calories,
@@ -136,6 +152,10 @@ export class AnalyticsService {
       exerciseCalories,
       dailyBurnKcal,
       deficitOrSurplusKcal,
+      plannedDeficitOrSurplusKcal,
+      recommendedIntakeKcal,
+      exerciseCompensationKcal,
+      planGapKcal,
     };
   }
 
@@ -165,6 +185,14 @@ export class AnalyticsService {
       exerciseCalories: average(items.map((item) => item.exerciseCalories)),
       dailyBurnKcal: average(items.map((item) => item.dailyBurnKcal)),
       deficitOrSurplusKcal: average(items.map((item) => item.deficitOrSurplusKcal)),
+      plannedDeficitOrSurplusKcal: average(
+        items.map((item) => item.plannedDeficitOrSurplusKcal),
+      ),
+      recommendedIntakeKcal: average(items.map((item) => item.recommendedIntakeKcal)),
+      exerciseCompensationKcal: average(
+        items.map((item) => item.exerciseCompensationKcal),
+      ),
+      planGapKcal: average(items.map((item) => item.planGapKcal)),
     };
   }
 

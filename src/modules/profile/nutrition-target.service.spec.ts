@@ -15,20 +15,22 @@ describe('NutritionTargetService', () => {
       goal: Goal.loseWeight,
     });
 
-    expect(result.tdee).toBeCloseTo(1929);
+    expect(result.tdee).toBeCloseTo(2491.625);
+    expect(result.estimatedTdee).toBeCloseTo(2491.625);
+    expect(result.actualTdee).toBeNull();
     expect(result.dailyBaseBurnKcal).toBeCloseTo(1607.5);
-    expect(result.dailyActivityBurnKcal).toBeCloseTo(321.5);
+    expect(result.dailyActivityBurnKcal).toBeCloseTo(884.125);
     expect(result.dailyEnergyAdjustmentKcal).toBeCloseTo(385);
-    expect(result.targetCalories).toBeCloseTo(1544);
+    expect(result.targetCalories).toBeCloseTo(2106.625);
     expect(result.proteinG).toBeCloseTo(122.4);
-    expect(result.carbsG).toBeCloseTo(171.8);
+    expect(result.carbsG).toBeCloseTo(312.456);
     expect(result.totalFatG).toBeCloseTo(40.8);
-    expect(result.fiberG).toBeCloseTo(21.62, 1);
-    expect(result.waterMl).toBe(2040);
-    expect(result.saturatedFatLimitG).toBeCloseTo(17.16, 1);
+    expect(result.fiberG).toBeCloseTo(29.493, 1);
+    expect(result.waterMl).toBe(2540);
+    expect(result.saturatedFatLimitG).toBeCloseTo(23.407, 1);
     expect(result.omega3TargetG).toBe(1.6);
     expect(result.transFatLimitG).toBe(0);
-    expect(result.macroRatio).toBe('goal_activity_v1');
+    expect(result.macroRatio).toBe('adaptive_tdee_v1');
   });
 
   it('uses goal macros when calories are clamped low', () => {
@@ -84,12 +86,13 @@ describe('NutritionTargetService', () => {
       goal: Goal.maintainWeight,
     });
 
-    expect(result.tdee).toBeCloseTo(1941);
+    expect(result.tdee).toBeCloseTo(2790.1875);
     expect(result.dailyEnergyAdjustmentKcal).toBe(0);
-    expect(result.targetCalories).toBeCloseTo(1941);
+    expect(result.targetCalories).toBeCloseTo(2790.1875);
     expect(result.proteinG).toBeCloseTo(112);
     expect(result.totalFatG).toBeCloseTo(56);
-    expect(result.carbsG).toBeCloseTo(247.25);
+    expect(result.carbsG).toBeCloseTo(459.547);
+    expect(result.waterMl).toBe(2850);
   });
 
   it('uses higher carb floor for weight gain when calories allow it', () => {
@@ -108,7 +111,7 @@ describe('NutritionTargetService', () => {
     expect(result.proteinG).toBeCloseTo(119);
     expect(result.totalFatG).toBeCloseTo(56);
     expect(result.carbsG).toBeGreaterThanOrEqual(180);
-    expect(result.macroRatio).toBe('goal_activity_v1');
+    expect(result.macroRatio).toBe('adaptive_tdee_v1');
   });
 
   it('rejects goal directions that conflict with target weight', () => {

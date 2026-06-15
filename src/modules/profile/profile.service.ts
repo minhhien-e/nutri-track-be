@@ -11,6 +11,16 @@ import {
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
+const MIN_ADAPTIVE_TDEE_DAYS = 14;
+const MIN_ADAPTIVE_MEAL_LOG_DAYS = 7;
+const ACTUAL_TDEE_MIN_RATIO = 0.75;
+const ACTUAL_TDEE_MAX_RATIO = 1.25;
+
+const exerciseCompensationRatio: Record<Goal, number> = {
+  loseWeight: 0.4,
+  maintainWeight: 0.7,
+  gainWeight: 0.9,
+};
 
 @Injectable()
 export class ProfileService {
@@ -29,7 +39,12 @@ export class ProfileService {
       this.prisma.nutritionTarget.findUnique({ where: { userId } }),
     ]);
     if (!profile || !nutritionTarget) return nutritionTarget;
-    return this.normalizeNutritionTarget(userId, profile, nutritionTarget);
+    const normalized = await this.normalizeNutritionTarget(
+      userId,
+      profile,
+      nutritionTarget,
+    );
+    return this.refreshAdaptiveTdee(userId, profile, normalized);
   }
 
   calculateTarget(dto: CalculateNutritionTargetDto) {
@@ -53,7 +68,7 @@ export class ProfileService {
     const target = this.nutritionTargetService.calculate(dto);
     const nutritionTarget = await this.prisma.nutritionTarget.upsert({
       where: { userId },
-      update: target,
+      update: { ...target, actualTdee: null, actualTdeeCalculatedAt: null, actualTdeeWindowDays: null },
       create: { userId, ...target },
     });
     return { profile, nutritionTarget };
@@ -65,10 +80,15 @@ export class ProfileService {
       this.prisma.nutritionTarget.findUnique({ where: { userId } }),
     ]);
     if (!profile || !storedNutritionTarget) return null;
-    const nutritionTarget = await this.normalizeNutritionTarget(
+    const normalizedNutritionTarget = await this.normalizeNutritionTarget(
       userId,
       profile,
       storedNutritionTarget,
+    );
+    const nutritionTarget = await this.refreshAdaptiveTdee(
+      userId,
+      profile,
+      normalizedNutritionTarget,
     );
 
     const startDate = this.startOfDay(
@@ -176,14 +196,23 @@ export class ProfileService {
     };
   }
 
-  upsertWeeklyWeightLog(userId: string, dto: UpsertWeeklyWeightLogDto) {
+  async upsertWeeklyWeightLog(userId: string, dto: UpsertWeeklyWeightLogDto) {
     const measuredDate = this.startOfDay(dto.measuredDate);
     const weekKey = this.isoWeekKey(measuredDate);
-    return this.prisma.weeklyWeightLog.upsert({
+    const log = await this.prisma.weeklyWeightLog.upsert({
       where: { userId_weekKey: { userId, weekKey } },
       update: { measuredDate, weightKg: dto.weightKg },
       create: { userId, weekKey, measuredDate, weightKg: dto.weightKg },
     });
+    const [profile, target] = await Promise.all([
+      this.prisma.userProfile.findUnique({ where: { userId } }),
+      this.prisma.nutritionTarget.findUnique({ where: { userId } }),
+    ]);
+    if (profile && target) {
+      const normalized = await this.normalizeNutritionTarget(userId, profile, target);
+      await this.refreshAdaptiveTdee(userId, profile, normalized);
+    }
+    return log;
   }
 
   async deleteWeeklyWeightLog(userId: string, weekKey: string) {
@@ -202,10 +231,15 @@ export class ProfileService {
       this.prisma.nutritionTarget.findUnique({ where: { userId } }),
     ]);
     if (!profile || !storedNutritionTarget) return null;
-    const nutritionTarget = await this.normalizeNutritionTarget(
+    const normalizedNutritionTarget = await this.normalizeNutritionTarget(
       userId,
       profile,
       storedNutritionTarget,
+    );
+    const nutritionTarget = await this.refreshAdaptiveTdee(
+      userId,
+      profile,
+      normalizedNutritionTarget,
     );
 
     const dateKey = new Date().toISOString().slice(0, 10);
@@ -240,22 +274,30 @@ export class ProfileService {
     const loggedExerciseCalories = record?.exerciseCalories ?? 0;
     const projectedNetCalories = consumedCalories - loggedExerciseCalories;
     const clampedNetCalories = Math.max(0, projectedNetCalories);
+    const dailyBurnKcal =
+      nutritionTarget.dailyTotalBurnKcal || nutritionTarget.tdee;
+    const plannedDeficitOrSurplusKcal =
+      dailyBurnKcal - nutritionTarget.targetCalories;
+    const actualDeficitOrSurplusKcal =
+      dailyBurnKcal + loggedExerciseCalories - consumedCalories;
+    const exerciseCompensationKcal =
+      loggedExerciseCalories * exerciseCompensationRatio[profile.goal];
+    const recommendedIntakeKcal =
+      nutritionTarget.targetCalories + exerciseCompensationKcal;
+    const planGapKcal =
+      actualDeficitOrSurplusKcal - plannedDeficitOrSurplusKcal;
     const baseRemainingFoodCalories = Math.max(
       0,
       nutritionTarget.targetCalories - consumedCalories,
     );
-    const exerciseCreditCalories = loggedExerciseCalories;
+    const exerciseCreditCalories = exerciseCompensationKcal;
     const remainingFoodCalories = Math.max(
       0,
-      nutritionTarget.targetCalories +
-        exerciseCreditCalories -
-        consumedCalories,
+      recommendedIntakeKcal - consumedCalories,
     );
     const overTargetCalories = Math.max(
       0,
-      consumedCalories -
-        nutritionTarget.targetCalories -
-        exerciseCreditCalories,
+      consumedCalories - recommendedIntakeKcal,
     );
     const exerciseCaloriesToBurn = overTargetCalories;
     const totalDelta = Math.abs(
@@ -279,8 +321,6 @@ export class ProfileService {
       { ...todayTotals, calories: projectedNetCalories },
       waterMl,
     );
-    const dailyBurnKcal =
-      nutritionTarget.dailyTotalBurnKcal || nutritionTarget.tdee;
     const dailyAdjustmentKcal =
       profile.goal === Goal.maintainWeight
         ? 0
@@ -325,8 +365,16 @@ export class ProfileService {
         targetCalories: nutritionTarget.targetCalories,
         dailyIntakeTargetKcal: nutritionTarget.targetCalories,
         dailyBurnKcal,
+        estimatedTdee: nutritionTarget.estimatedTdee || dailyBurnKcal,
+        actualTdee: nutritionTarget.actualTdee,
+        activeTdee: dailyBurnKcal,
+        actualTdeeCalculatedAt: nutritionTarget.actualTdeeCalculatedAt,
         dailyAdjustmentKcal,
         dailyEnergyAdjustmentKcal: nutritionTarget.dailyEnergyAdjustmentKcal,
+        plannedDeficitOrSurplusKcal,
+        recommendedIntakeKcal,
+        exerciseCompensationKcal,
+        planGapKcal,
         plannedDailyDeficitKcal:
           profile.goal === Goal.loseWeight
             ? nutritionTarget.dailyEnergyAdjustmentKcal
@@ -355,6 +403,11 @@ export class ProfileService {
         overTargetCalories,
         loggedExerciseCalories,
         exerciseCaloriesToBurn,
+        plannedDeficitOrSurplusKcal,
+        actualDeficitOrSurplusKcal,
+        recommendedIntakeKcal,
+        exerciseCompensationKcal,
+        planGapKcal,
         projectedNetCalories,
         clampedNetCalories,
         exerciseCalories: loggedExerciseCalories,
@@ -399,6 +452,96 @@ export class ProfileService {
     }
   }
 
+  private async refreshAdaptiveTdee(
+    userId: string,
+    profile: {
+      age: number;
+      gender: UpdateProfileDto["gender"];
+      heightCm: number;
+      weightKg: number;
+      activityLevel: UpdateProfileDto["activityLevel"];
+      goal: Goal;
+    },
+    target: NutritionTarget,
+  ) {
+    if (typeof this.prisma.weeklyWeightLog?.findMany !== "function") {
+      return target;
+    }
+    const logs = await this.prisma.weeklyWeightLog.findMany({
+      where: {
+        userId,
+        measuredDate: { gte: target.startDate ?? target.calculatedAt },
+      },
+      orderBy: { measuredDate: "asc" },
+    });
+    if (logs.length < 2) return target;
+
+    const first = logs[0];
+    const latest = logs[logs.length - 1];
+    const firstDate = this.startOfDay(first.measuredDate);
+    const latestDate = this.startOfDay(latest.measuredDate);
+    const windowDays = Math.round(
+      (latestDate.getTime() - firstDate.getTime()) / DAY_MS,
+    );
+    if (windowDays < MIN_ADAPTIVE_TDEE_DAYS) return target;
+
+    const dateKeys = this.dateKeysBetween(firstDate, latestDate);
+    const records = await this.prisma.dailyRecord.findMany({
+      where: { userId, dateKey: { in: dateKeys } },
+      include: { mealEntries: true },
+    });
+    const mealRecords = records.filter((record) => record.mealEntries.length > 0);
+    if (mealRecords.length < MIN_ADAPTIVE_MEAL_LOG_DAYS) return target;
+
+    const totalCalories = mealRecords.reduce(
+      (sum, record) =>
+        sum +
+        record.mealEntries.reduce((entrySum, entry) => entrySum + entry.calories, 0),
+      0,
+    );
+    const averageCalories = totalCalories / mealRecords.length;
+    const dailyEnergyDelta =
+      ((first.weightKg - latest.weightKg) * KCAL_PER_KG) / windowDays;
+    const calculatedActualTdee = averageCalories + dailyEnergyDelta;
+    const estimatedTdee = target.estimatedTdee || target.tdee;
+    const actualTdee = Math.min(
+      estimatedTdee * ACTUAL_TDEE_MAX_RATIO,
+      Math.max(estimatedTdee * ACTUAL_TDEE_MIN_RATIO, calculatedActualTdee),
+    );
+
+    if (
+      target.actualTdee != null &&
+      Math.abs(target.actualTdee - actualTdee) < 1 &&
+      target.actualTdeeWindowDays === windowDays
+    ) {
+      return target;
+    }
+
+    const recalculated = this.nutritionTargetService.calculate(
+      {
+        age: profile.age,
+        gender: profile.gender,
+        heightCm: profile.heightCm,
+        weightKg: profile.weightKg,
+        startDate: target.startDate ?? target.calculatedAt,
+        targetWeightKg: target.targetWeightKg,
+        targetDate: target.targetDate,
+        activityLevel: profile.activityLevel,
+        goal: profile.goal,
+      },
+      { actualTdee },
+    );
+    return this.prisma.nutritionTarget.update({
+      where: { userId },
+      data: {
+        ...recalculated,
+        actualTdee,
+        actualTdeeCalculatedAt: new Date(),
+        actualTdeeWindowDays: windowDays,
+      },
+    });
+  }
+
   private startOfDay(value: Date) {
     return new Date(
       Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
@@ -418,6 +561,19 @@ export class ProfileService {
       ((date.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7,
     );
     return `${date.getUTCFullYear()}-W${week.toString().padStart(2, "0")}`;
+  }
+
+  private dateKeysBetween(startDate: Date, endDate: Date) {
+    const dayCount = Math.max(
+      0,
+      Math.round(
+        (this.startOfDay(endDate).getTime() - this.startOfDay(startDate).getTime()) /
+          DAY_MS,
+      ),
+    );
+    return Array.from({ length: dayCount + 1 }, (_, index) =>
+      this.dateKey(addDays(startDate, index)),
+    );
   }
 
   private weekStartsBetween(startDate: Date, targetDate: Date) {
