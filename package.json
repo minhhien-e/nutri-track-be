@@ -5,7 +5,7 @@
   "description": "NutriTrack NestJS backend",
   "scripts": {
     "build": "nest build",
-    "start": "node dist/src/main.js",
+    "start": "prisma migrate deploy && node dist/src/main.js",
     "start:dev": "nest start --watch",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --fix=false",
     "test": "jest",
