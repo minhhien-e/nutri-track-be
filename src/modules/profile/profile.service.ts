@@ -8,6 +8,7 @@ import {
   MACRO_FORMULA_VERSION,
   NutritionTargetService,
 } from "./nutrition-target.service";
+import { AdaptiveTdeeService } from "./domain/adaptive-tdee.service";
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
@@ -483,35 +484,24 @@ export class ProfileService {
     const windowDays = Math.round(
       (latestDate.getTime() - firstDate.getTime()) / DAY_MS,
     );
-    if (windowDays < MIN_ADAPTIVE_TDEE_DAYS) return target;
 
     const dateKeys = this.dateKeysBetween(firstDate, latestDate);
     const records = await this.prisma.dailyRecord.findMany({
       where: { userId, dateKey: { in: dateKeys } },
       include: { mealEntries: true },
     });
-    const mealRecords = records.filter((record) => record.mealEntries.length > 0);
-    if (mealRecords.length < MIN_ADAPTIVE_MEAL_LOG_DAYS) return target;
 
-    const totalCalories = mealRecords.reduce(
-      (sum, record) =>
-        sum +
-        record.mealEntries.reduce((entrySum, entry) => entrySum + entry.calories, 0),
-      0,
-    );
-    const averageCalories = totalCalories / mealRecords.length;
-    const averageLoggedExerciseCalories =
-      records.reduce((sum, record) => sum + (record.exerciseCalories ?? 0), 0) /
-      windowDays;
-    const dailyEnergyDelta =
-      ((first.weightKg - latest.weightKg) * KCAL_PER_KG) / windowDays;
-    const calculatedActualTdee =
-      averageCalories + dailyEnergyDelta - averageLoggedExerciseCalories;
     const estimatedTdee = target.estimatedTdee || target.tdee;
-    const actualTdee = Math.min(
-      estimatedTdee * ACTUAL_TDEE_MAX_RATIO,
-      Math.max(estimatedTdee * ACTUAL_TDEE_MIN_RATIO, calculatedActualTdee),
+    const actualTdee = AdaptiveTdeeService.calculateActualTdee(
+      estimatedTdee,
+      logs,
+      records,
+      windowDays,
     );
+
+    if (actualTdee === null) {
+      return target;
+    }
 
     if (
       target.actualTdee != null &&
