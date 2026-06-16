@@ -9,6 +9,7 @@ import {
   NutritionTargetService,
 } from "./nutrition-target.service";
 import { AdaptiveTdeeService } from "./domain/adaptive-tdee.service";
+import { domainEventEmitter } from "../../common/event-emitter";
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
@@ -28,6 +29,10 @@ export class ProfileService {
 
   getProfile(userId: string) {
     return this.prisma.userProfile.findUnique({ where: { userId } });
+  }
+
+  getRawNutritionTarget(userId: string) {
+    return this.prisma.nutritionTarget.findUnique({ where: { userId } });
   }
 
   async getNutritionTarget(userId: string) {
@@ -62,12 +67,15 @@ export class ProfileService {
       update: profileData,
       create: { userId, ...profileData },
     });
-    const target = this.nutritionTargetService.calculate(dto);
+    const existingTarget = await this.prisma.nutritionTarget.findUnique({ where: { userId } });
+    const macroRatio = existingTarget?.macroRatio ?? "manual_exercise_baseline_v1";
+    const target = this.nutritionTargetService.calculate(dto, { macroRatio });
     const nutritionTarget = await this.prisma.nutritionTarget.upsert({
       where: { userId },
       update: { ...target, actualTdee: null, actualTdeeCalculatedAt: null, actualTdeeWindowDays: null },
       create: { userId, ...target },
     });
+    domainEventEmitter.emit("WeightLogChanged", { userId });
     return { profile, nutritionTarget };
   }
 
@@ -201,14 +209,7 @@ export class ProfileService {
       update: { measuredDate, weightKg: dto.weightKg },
       create: { userId, weekKey, measuredDate, weightKg: dto.weightKg },
     });
-    const [profile, target] = await Promise.all([
-      this.prisma.userProfile.findUnique({ where: { userId } }),
-      this.prisma.nutritionTarget.findUnique({ where: { userId } }),
-    ]);
-    if (profile && target) {
-      const normalized = await this.normalizeNutritionTarget(userId, profile, target);
-      await this.refreshAdaptiveTdee(userId, profile, normalized);
-    }
+    domainEventEmitter.emit("WeightLogChanged", { userId });
     return log;
   }
 
@@ -219,6 +220,7 @@ export class ProfileService {
     await this.prisma.weeklyWeightLog.deleteMany({
       where: { userId, weekKey },
     });
+    domainEventEmitter.emit("WeightLogChanged", { userId });
     return { deleted: true };
   }
 
@@ -426,7 +428,8 @@ export class ProfileService {
     },
     target: NutritionTarget,
   ) {
-    if (target.macroRatio === MACRO_FORMULA_VERSION) return target;
+    const validRatios = [MACRO_FORMULA_VERSION, "balanced", "low_carb", "high_protein"];
+    if (validRatios.includes(target.macroRatio)) return target;
     try {
       const recalculated = this.nutritionTargetService.calculate({
         age: profile.age,
@@ -449,7 +452,7 @@ export class ProfileService {
     }
   }
 
-  private async refreshAdaptiveTdee(
+  async refreshAdaptiveTdee(
     userId: string,
     profile: {
       age: number;
@@ -519,7 +522,7 @@ export class ProfileService {
         activityLevel: profile.activityLevel,
         goal: profile.goal,
       },
-      { actualTdee },
+      { actualTdee, macroRatio: target.macroRatio },
     );
     return this.prisma.nutritionTarget.update({
       where: { userId },

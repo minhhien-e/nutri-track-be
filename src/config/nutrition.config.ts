@@ -1,0 +1,22 @@
+export const NUTRITION_CONFIG = {
+  kcalPerKg: 7700,
+  minTargetCalories: 1200,
+  maxTargetCalories: 5000,
+  maxLossDeficitKcal: 750,
+  maxLossDeficitTdeeRatio: 0.25,
+  maxGainSurplusKcal: 500,
+  maxGainSurplusTdeeRatio: 0.15,
+  baselineActivityFactor: 1.2,
+  fatMinGPerKg: 0.5,
+  fiberGPer1000Kcal: 14,
+  waterMlPerKg: 30,
+  minAdaptiveTdeeDays: 14,
+  minAdaptiveMealLogDays: 7,
+  actualTdeeMinRatio: 0.75,
+  actualTdeeMaxRatio: 1.25,
+  exerciseCompensationRatio: {
+    loseWeight: 0.4,
+    maintainWeight: 0.7,
+    gainWeight: 0.9,
+  },
+};

@@ -1,3 +1,5 @@
+import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
+
 export interface WeightLog {
   measuredDate: Date;
   weightKg: number;
@@ -9,12 +11,6 @@ export interface DailyMealRecord {
 }
 
 export class AdaptiveTdeeService {
-  private static readonly MIN_ADAPTIVE_TDEE_DAYS = 14;
-  private static readonly MIN_ADAPTIVE_MEAL_LOG_DAYS = 7;
-  private static readonly ACTUAL_TDEE_MIN_RATIO = 0.75;
-  private static readonly ACTUAL_TDEE_MAX_RATIO = 1.25;
-  private static readonly KCAL_PER_KG = 7700;
-
   public static calculateActualTdee(
     estimatedTdee: number,
     logs: WeightLog[],
@@ -22,10 +18,10 @@ export class AdaptiveTdeeService {
     windowDays: number,
   ): number | null {
     if (logs.length < 2) return null;
-    if (windowDays < this.MIN_ADAPTIVE_TDEE_DAYS) return null;
+    if (windowDays < NUTRITION_CONFIG.minAdaptiveTdeeDays) return null;
 
     const mealRecords = records.filter((r) => r.mealEntries.length > 0);
-    if (mealRecords.length < this.MIN_ADAPTIVE_MEAL_LOG_DAYS) return null;
+    if (mealRecords.length < NUTRITION_CONFIG.minAdaptiveMealLogDays) return null;
 
     const first = logs[0];
     const latest = logs[logs.length - 1];
@@ -38,15 +34,15 @@ export class AdaptiveTdeeService {
     const averageLoggedExerciseCalories =
       records.reduce((sum, r) => sum + (r.exerciseCalories ?? 0), 0) / windowDays;
     const dailyEnergyDelta =
-      ((first.weightKg - latest.weightKg) * this.KCAL_PER_KG) / windowDays;
+      ((first.weightKg - latest.weightKg) * NUTRITION_CONFIG.kcalPerKg) / windowDays;
 
     const calculatedActualTdee =
       averageCalories + dailyEnergyDelta - averageLoggedExerciseCalories;
 
     // Clamp actual TDEE
     return Math.min(
-      estimatedTdee * this.ACTUAL_TDEE_MAX_RATIO,
-      Math.max(estimatedTdee * this.ACTUAL_TDEE_MIN_RATIO, calculatedActualTdee),
+      estimatedTdee * NUTRITION_CONFIG.actualTdeeMaxRatio,
+      Math.max(estimatedTdee * NUTRITION_CONFIG.actualTdeeMinRatio, calculatedActualTdee),
     );
   }
 }

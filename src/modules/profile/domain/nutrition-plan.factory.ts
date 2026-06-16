@@ -1,14 +1,10 @@
 import type { User } from "./user.aggregate";
 import { NutritionPlan } from "./nutrition-plan";
 import { Gender, Goal } from "@prisma/client";
+import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
+import { MacroStrategyFactory } from "./macro-distribution.strategies";
 
 export class NutritionPlanFactory {
-  private static readonly MIN_TARGET_CALORIES = 1200;
-  private static readonly MAX_TARGET_CALORIES = 5000;
-  private static readonly FAT_MIN_G_PER_KG = 0.5;
-  private static readonly FIBER_G_PER_1000_KCAL = 14;
-  private static readonly WATER_ML_PER_KG = 30;
-
   public static createPlan(user: User, actualTdee: number | null = null): NutritionPlan {
     this.validateGoalDirection(user);
 
@@ -40,23 +36,20 @@ export class NutritionPlanFactory {
           : dailyTotalBurnKcal;
 
     const targetCalories = Math.min(
-      this.MAX_TARGET_CALORIES,
-      Math.max(this.MIN_TARGET_CALORIES, rawTargetCalories)
+      NUTRITION_CONFIG.maxTargetCalories,
+      Math.max(NUTRITION_CONFIG.minTargetCalories, rawTargetCalories)
     );
 
-    // Tính macro targets
-    const proteinG = body.weightKg * goal.getProteinFactor();
-    const { carbsG, totalFatG } = this.calculateMacros(
-      goal.getGoalType(),
-      body.weightKg,
+    // Tính macro targets dựa trên strategy
+    const macroStrategy = MacroStrategyFactory.create(user.macroRatio);
+    const { proteinG, carbsG, fatG } = macroStrategy.calculateMacros(
       targetCalories,
-      proteinG,
-      goal.getFatFactor(),
-      goal.getCarbFloor()
+      body.weightKg,
+      goal.getGoalType()
     );
 
-    const fiberG = (targetCalories / 1000) * this.FIBER_G_PER_1000_KCAL;
-    const waterMl = body.weightKg * this.WATER_ML_PER_KG;
+    const fiberG = (targetCalories / 1000) * NUTRITION_CONFIG.fiberGPer1000Kcal;
+    const waterMl = body.weightKg * NUTRITION_CONFIG.waterMlPerKg;
     const saturatedFatLimitG = (targetCalories * 0.1) / 9;
     const omega3TargetG = body.gender === Gender.male ? 1.6 : 1.1;
 
@@ -70,7 +63,7 @@ export class NutritionPlanFactory {
       estimatedTdee,
       actualTdee,
       actualTdeeCalculatedAt: actualTdee === null ? null : new Date(),
-      actualTdeeWindowDays: null, // Sẽ được cập nhật từ DB mapper hoặc Domain Service ngoài
+      actualTdeeWindowDays: null,
       dailyBaseBurnKcal,
       dailyActivityBurnKcal,
       dailyTotalBurnKcal,
@@ -78,43 +71,16 @@ export class NutritionPlanFactory {
       targetCalories,
       proteinG,
       carbsG,
-      fatG: totalFatG,
-      totalFatG,
+      fatG,
+      totalFatG: fatG,
       fiberG,
       waterMl,
       saturatedFatLimitG,
       omega3TargetG,
       transFatLimitG: 0,
-      macroRatio: "manual_exercise_baseline_v1",
+      macroRatio: user.macroRatio,
       calculatedAt: new Date(),
     });
-  }
-
-  private static calculateMacros(
-    goal: Goal,
-    weightKg: number,
-    targetCalories: number,
-    proteinG: number,
-    fatFactor: number,
-    carbFloorG: number
-  ) {
-    const proteinCalories = proteinG * 4;
-    const fatBaseG = weightKg * fatFactor;
-    const fatMinG = weightKg * this.FAT_MIN_G_PER_KG;
-    
-    let totalFatG = fatBaseG;
-    let carbsG = (targetCalories - proteinCalories - totalFatG * 9) / 4;
-
-    if (carbsG < carbFloorG) {
-      const fatAllowedWithCarbFloor = (targetCalories - proteinCalories - carbFloorG * 4) / 9;
-      totalFatG = Math.max(fatMinG, Math.min(fatBaseG, fatAllowedWithCarbFloor));
-      carbsG = (targetCalories - proteinCalories - totalFatG * 9) / 4;
-    }
-
-    return {
-      carbsG: Math.max(0, carbsG),
-      totalFatG: Math.max(0, totalFatG),
-    };
   }
 
   private static validateGoalDirection(user: User) {

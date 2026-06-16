@@ -9,7 +9,10 @@ export const MACRO_FORMULA_VERSION = "manual_exercise_baseline_v1";
 
 @Injectable()
 export class NutritionTargetService {
-  calculate(profile: UpdateProfileDto, options?: { actualTdee?: number | null }) {
+  calculate(
+    profile: UpdateProfileDto,
+    options?: { actualTdee?: number | null; macroRatio?: string }
+  ) {
     try {
       const body = new BodyProfile(
         profile.gender,
@@ -26,7 +29,8 @@ export class NutritionTargetService {
         goal,
         profile.startDate ?? new Date(),
         profile.targetWeightKg,
-        profile.targetDate
+        profile.targetDate,
+        options?.macroRatio ?? "manual_exercise_baseline_v1"
       );
       
       const plan = user.generateNutritionPlan(options?.actualTdee);

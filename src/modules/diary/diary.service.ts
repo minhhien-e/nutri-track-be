@@ -4,6 +4,10 @@ import { CreateMealEntryDto } from './dto/create-meal-entry.dto';
 import { UpdateMealEntryDto } from './dto/update-meal-entry.dto';
 import { DiaryRepository } from './diary.repository';
 import { DiaryTotalsService } from './diary-totals.service';
+import { FoodItem } from '../foods/domain/food-item';
+import { MealEntry } from './domain/meal-entry';
+import { DailyRecord } from './domain/daily-record';
+import { domainEventEmitter } from '../../common/event-emitter';
 
 @Injectable()
 export class DiaryService {
@@ -30,6 +34,7 @@ export class DiaryService {
       ...nutrients,
     });
     await this.foodsService.markRecent(userId, food.id);
+    domainEventEmitter.emit('DailyIntakeChanged', { userId });
     return this.getDailyRecord(userId, dateKey);
   }
 
@@ -45,6 +50,7 @@ export class DiaryService {
       grams,
       ...nutrients,
     });
+    domainEventEmitter.emit('DailyIntakeChanged', { userId });
     return this.getDailyRecord(userId, dateKey);
   }
 
@@ -52,6 +58,7 @@ export class DiaryService {
     const entry = await this.diaryRepository.findEntryForUser(entryId, userId, dateKey);
     if (!entry) throw new NotFoundException('Meal entry not found');
     await this.diaryRepository.deleteEntry(entryId);
+    domainEventEmitter.emit('DailyIntakeChanged', { userId });
     return { deleted: true, record: await this.getDailyRecord(userId, dateKey) };
   }
 
@@ -62,11 +69,41 @@ export class DiaryService {
 
   async updateExerciseCalories(userId: string, dateKey: string, exerciseCalories: number) {
     const record = await this.diaryRepository.updateExerciseCalories(userId, dateKey, exerciseCalories);
+    domainEventEmitter.emit('DailyIntakeChanged', { userId });
     return this.withTotals(record);
   }
 
   private withTotals(record: Awaited<ReturnType<DiaryRepository['upsertRecord']>>) {
-    const totals = this.diaryTotalsService.totals(record.mealEntries);
+    const domainEntries = record.mealEntries.map(entry => {
+      const domainFood = new FoodItem(entry.foodItem);
+      return new MealEntry({
+        id: entry.id,
+        foodItem: domainFood,
+        mealType: entry.mealType,
+        grams: entry.grams,
+        calories: entry.calories,
+        proteinG: entry.proteinG,
+        carbsG: entry.carbsG,
+        fatG: entry.fatG,
+        totalFatG: entry.totalFatG,
+        saturatedFatG: entry.saturatedFatG,
+        omega3G: entry.omega3G,
+        transFatG: entry.transFatG,
+        fiberG: entry.fiberG,
+      });
+    });
+
+    const dailyRecord = new DailyRecord({
+      id: record.id,
+      userId: record.userId,
+      dateKey: record.dateKey,
+      waterMl: record.waterMl,
+      exerciseCalories: record.exerciseCalories,
+      entries: domainEntries,
+    });
+
+    const totals = dailyRecord.getTotalNutrients();
+
     return {
       id: record.id,
       userId: record.userId,
@@ -75,7 +112,7 @@ export class DiaryService {
       exerciseCalories: record.exerciseCalories,
       entries: record.mealEntries,
       totalCalories: totals.calories,
-      netCalories: totals.calories - record.exerciseCalories,
+      netCalories: dailyRecord.getNetCalories(),
       totalProteinG: totals.proteinG,
       totalCarbsG: totals.carbsG,
       totalFatG: totals.totalFatG,

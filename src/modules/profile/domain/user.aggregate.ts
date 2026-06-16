@@ -13,6 +13,7 @@ export class User {
     public readonly startDate: Date,
     public readonly targetWeightKg: number,
     public readonly targetDate: Date,
+    public readonly macroRatio: string = "manual_exercise_baseline_v1",
   ) {}
 
   public generateNutritionPlan(actualTdee?: number | null): NutritionPlan {

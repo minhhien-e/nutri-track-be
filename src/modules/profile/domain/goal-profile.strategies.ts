@@ -1,6 +1,7 @@
 import { Goal } from "@prisma/client";
 import { BodyProfile } from "./body-profile";
 import { GoalProfile } from "./goal-profile.interface";
+import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
 
 export class LoseWeightGoal implements GoalProfile {
   public getGoalType(): Goal {
@@ -13,10 +14,12 @@ export class LoseWeightGoal implements GoalProfile {
     targetWeightKg: number,
     days: number,
   ): number {
-    const rawAdjustment = (Math.abs(body.weightKg - targetWeightKg) * 7700) / days;
-    const maxDeficitKcal = 750;
-    const maxDeficitRatio = 0.25;
-    return Math.min(rawAdjustment, maxDeficitKcal, tdee * maxDeficitRatio);
+    const rawAdjustment = (Math.abs(body.weightKg - targetWeightKg) * NUTRITION_CONFIG.kcalPerKg) / days;
+    return Math.min(
+      rawAdjustment,
+      NUTRITION_CONFIG.maxLossDeficitKcal,
+      tdee * NUTRITION_CONFIG.maxLossDeficitTdeeRatio,
+    );
   }
 
   public getProteinFactor(): number {
@@ -55,10 +58,12 @@ export class GainWeightGoal implements GoalProfile {
     targetWeightKg: number,
     days: number,
   ): number {
-    const rawAdjustment = (Math.abs(body.weightKg - targetWeightKg) * 7700) / days;
-    const maxSurplusKcal = 500;
-    const maxSurplusRatio = 0.15;
-    return Math.min(rawAdjustment, maxSurplusKcal, tdee * maxSurplusRatio);
+    const rawAdjustment = (Math.abs(body.weightKg - targetWeightKg) * NUTRITION_CONFIG.kcalPerKg) / days;
+    return Math.min(
+      rawAdjustment,
+      NUTRITION_CONFIG.maxGainSurplusKcal,
+      tdee * NUTRITION_CONFIG.maxGainSurplusTdeeRatio,
+    );
   }
 
   public getProteinFactor(): number {
@@ -92,10 +97,10 @@ export class MaintainWeightGoal implements GoalProfile {
   }
 
   public calculateCalorieAdjustment(
-    _tdee: number,
-    _body: BodyProfile,
-    _targetWeightKg: number,
-    _days: number,
+    tdee: number,
+    body: BodyProfile,
+    targetWeightKg: number,
+    days: number,
   ): number {
     return 0;
   }

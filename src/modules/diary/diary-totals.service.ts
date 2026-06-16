@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
+import { FoodItem } from "../foods/domain/food-item";
 
 type NutrientEntry = {
   calories: number;
@@ -25,6 +26,8 @@ type NutrientTotals = {
 };
 
 type FoodForScaling = {
+  id?: string;
+  name?: string;
   caloriesPer100g: number;
   proteinPer100g: number;
   carbsPer100g: number;
@@ -39,19 +42,20 @@ type FoodForScaling = {
 @Injectable()
 export class DiaryTotalsService {
   scaleFood(food: FoodForScaling, grams: number): NutrientEntry {
-    const ratio = grams / 100;
-    const totalFatG = (food.totalFatPer100g || food.fatPer100g) * ratio;
-    return {
-      calories: food.caloriesPer100g * ratio,
-      proteinG: food.proteinPer100g * ratio,
-      carbsG: food.carbsPer100g * ratio,
-      fatG: totalFatG,
-      totalFatG,
-      saturatedFatG: (food.saturatedFatPer100g ?? 0) * ratio,
-      omega3G: (food.omega3Per100g ?? 0) * ratio,
-      transFatG: (food.transFatPer100g ?? 0) * ratio,
-      fiberG: (food.fiberPer100g ?? 0) * ratio,
-    };
+    const domainFood = new FoodItem({
+      id: food.id ?? "temp-id",
+      name: food.name ?? "temp-name",
+      caloriesPer100g: food.caloriesPer100g,
+      proteinPer100g: food.proteinPer100g,
+      carbsPer100g: food.carbsPer100g,
+      fatPer100g: food.fatPer100g,
+      totalFatPer100g: food.totalFatPer100g,
+      saturatedFatPer100g: food.saturatedFatPer100g,
+      omega3Per100g: food.omega3Per100g,
+      transFatPer100g: food.transFatPer100g,
+      fiberPer100g: food.fiberPer100g,
+    });
+    return domainFood.scaleToNutrients(grams);
   }
 
   totals(entries: NutrientEntry[]): NutrientTotals {

@@ -194,4 +194,32 @@ describe("Domain Models Unit Tests", () => {
       user.generateNutritionPlan();
     }).toThrow("Gain weight goal requires target weight higher than current weight");
   });
+
+  describe("Macro Target Strategies Tests", () => {
+    const { MacroStrategyFactory } = require("./macro-distribution.strategies");
+
+    it("calculates BalancedMacroStrategy correctly", () => {
+      const strategy = MacroStrategyFactory.create("balanced");
+      const result = strategy.calculateMacros(2000, 70, Goal.loseWeight);
+      expect(result.proteinG).toBe((2000 * 0.3) / 4);
+      expect(result.carbsG).toBe((2000 * 0.4) / 4);
+      expect(result.fatG).toBe((2000 * 0.3) / 9);
+    });
+    
+    it("calculates LowCarbKetoStrategy correctly", () => {
+      const strategy = MacroStrategyFactory.create("low_carb");
+      const result = strategy.calculateMacros(2000, 70, Goal.loseWeight);
+      expect(result.proteinG).toBe((2000 * 0.2) / 4);
+      expect(result.carbsG).toBe((2000 * 0.05) / 4);
+      expect(result.fatG).toBe((2000 * 0.75) / 9);
+    });
+
+    it("calculates HighProteinStrategy correctly", () => {
+      const strategy = MacroStrategyFactory.create("high_protein");
+      const result = strategy.calculateMacros(2000, 70, Goal.loseWeight);
+      expect(result.proteinG).toBe((2000 * 0.35) / 4);
+      expect(result.carbsG).toBe((2000 * 0.45) / 4);
+      expect(result.fatG).toBe((2000 * 0.2) / 9);
+    });
+  });
 });
