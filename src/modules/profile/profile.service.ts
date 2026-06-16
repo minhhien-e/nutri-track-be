@@ -500,9 +500,13 @@ export class ProfileService {
       0,
     );
     const averageCalories = totalCalories / mealRecords.length;
+    const averageLoggedExerciseCalories =
+      records.reduce((sum, record) => sum + (record.exerciseCalories ?? 0), 0) /
+      windowDays;
     const dailyEnergyDelta =
       ((first.weightKg - latest.weightKg) * KCAL_PER_KG) / windowDays;
-    const calculatedActualTdee = averageCalories + dailyEnergyDelta;
+    const calculatedActualTdee =
+      averageCalories + dailyEnergyDelta - averageLoggedExerciseCalories;
     const estimatedTdee = target.estimatedTdee || target.tdee;
     const actualTdee = Math.min(
       estimatedTdee * ACTUAL_TDEE_MAX_RATIO,

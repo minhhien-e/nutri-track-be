@@ -1,57 +1,24 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { ActivityLevel, Gender, Goal } from "@prisma/client";
+import { Gender, Goal } from "@prisma/client";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 
 const KCAL_PER_KG = 7700;
 const MIN_TARGET_CALORIES = 1200;
 const MAX_TARGET_CALORIES = 5000;
-export const MACRO_FORMULA_VERSION = "adaptive_tdee_v1";
+export const MACRO_FORMULA_VERSION = "manual_exercise_baseline_v1";
 const MAX_LOSS_DEFICIT_KCAL = 750;
 const MAX_LOSS_DEFICIT_TDEE_RATIO = 0.25;
 const MAX_GAIN_SURPLUS_KCAL = 500;
 const MAX_GAIN_SURPLUS_TDEE_RATIO = 0.15;
+const BASELINE_ACTIVITY_FACTOR = 1.2;
 const FAT_MIN_G_PER_KG = 0.5;
 const FIBER_G_PER_1000_KCAL = 14;
 const WATER_ML_PER_KG = 30;
 
-const activityFactor: Record<ActivityLevel, number> = {
-  sedentary: 1.2,
-  lightlyActive: 1.35,
-  moderatelyActive: 1.55,
-  veryActive: 1.725,
-  extraActive: 1.9,
-};
-
-const activityWaterMl: Record<ActivityLevel, number> = {
-  sedentary: 0,
-  lightlyActive: 250,
-  moderatelyActive: 500,
-  veryActive: 750,
-  extraActive: 1000,
-};
-
-const proteinByGoalAndActivity: Record<Goal, Record<ActivityLevel, number>> = {
-  loseWeight: {
-    sedentary: 1.6,
-    lightlyActive: 1.7,
-    moderatelyActive: 1.8,
-    veryActive: 2.0,
-    extraActive: 2.0,
-  },
-  maintainWeight: {
-    sedentary: 1.2,
-    lightlyActive: 1.3,
-    moderatelyActive: 1.4,
-    veryActive: 1.6,
-    extraActive: 1.6,
-  },
-  gainWeight: {
-    sedentary: 1.6,
-    lightlyActive: 1.7,
-    moderatelyActive: 1.8,
-    veryActive: 2.0,
-    extraActive: 2.0,
-  },
+const proteinByGoal: Record<Goal, number> = {
+  loseWeight: 1.6,
+  maintainWeight: 1.2,
+  gainWeight: 1.6,
 };
 
 const fatByGoal: Record<Goal, number> = {
@@ -79,7 +46,7 @@ export class NutritionTargetService {
       5 * profile.age +
       genderOffset;
     const dailyBaseBurnKcal = bmr;
-    const estimatedTdee = bmr * activityFactor[profile.activityLevel];
+    const estimatedTdee = bmr * BASELINE_ACTIVITY_FACTOR;
     const actualTdee = options?.actualTdee ?? null;
     const tdee = actualTdee ?? estimatedTdee;
     const dailyActivityBurnKcal = Math.max(0, tdee - dailyBaseBurnKcal);
@@ -108,9 +75,7 @@ export class NutritionTargetService {
       MAX_TARGET_CALORIES,
       Math.max(MIN_TARGET_CALORIES, rawTargetCalories),
     );
-    const proteinG =
-      profile.weightKg *
-      proteinByGoalAndActivity[profile.goal][profile.activityLevel];
+    const proteinG = profile.weightKg * proteinByGoal[profile.goal];
     const macros = this.calculateMacros(
       profile.goal,
       profile.weightKg,
@@ -141,9 +106,7 @@ export class NutritionTargetService {
       fatG: totalFatG,
       totalFatG,
       fiberG,
-      waterMl:
-        profile.weightKg * WATER_ML_PER_KG +
-        activityWaterMl[profile.activityLevel],
+      waterMl: profile.weightKg * WATER_ML_PER_KG,
       saturatedFatLimitG: (targetCalories * 0.1) / 9,
       omega3TargetG: profile.gender === Gender.male ? 1.6 : 1.1,
       transFatLimitG: 0,

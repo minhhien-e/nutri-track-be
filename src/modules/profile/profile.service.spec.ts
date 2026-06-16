@@ -258,13 +258,15 @@ describe("ProfileService target overview calories", () => {
 
     const result = await service.getNutritionTarget("user-1");
 
-    expect(result?.macroRatio).toBe("adaptive_tdee_v1");
-    expect(result?.proteinG).toBeCloseTo(119);
+    expect(result?.macroRatio).toBe("manual_exercise_baseline_v1");
+    expect(result?.proteinG).toBeCloseTo(112);
     expect(result?.totalFatG).toBeCloseTo(42);
     expect(prisma.nutritionTarget.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user-1" },
-        update: expect.objectContaining({ macroRatio: "adaptive_tdee_v1" }),
+        update: expect.objectContaining({
+          macroRatio: "manual_exercise_baseline_v1",
+        }),
       }),
     );
   });
@@ -341,18 +343,19 @@ describe("ProfileService target overview calories", () => {
     );
   });
 
-  it("derives actual TDEE from logged intake and weight change", async () => {
+  it("derives actual base TDEE from logged intake, weight change and exercise", async () => {
     const adaptiveTarget = {
       ...nutritionTarget,
       estimatedTdee: 2400,
       actualTdee: null,
       actualTdeeCalculatedAt: null,
       actualTdeeWindowDays: null,
-      macroRatio: "adaptive_tdee_v1",
+      macroRatio: "manual_exercise_baseline_v1",
       targetDate: new Date("2026-12-31T00:00:00.000Z"),
     };
     const mealRecords = Array.from({ length: 7 }, (_, index) => ({
       dateKey: `2026-06-${(index + 1).toString().padStart(2, "0")}`,
+      exerciseCalories: 300,
       mealEntries: [{ calories: 2200 }],
     }));
     const prisma = {
@@ -388,13 +391,13 @@ describe("ProfileService target overview calories", () => {
 
     const result = await service.getNutritionTarget("user-1");
 
-    expect(result?.actualTdee).toBeCloseTo(2713.33, 1);
-    expect(result?.tdee).toBeCloseTo(2713.33, 1);
+    expect(result?.actualTdee).toBeCloseTo(2643.33, 1);
+    expect(result?.tdee).toBeCloseTo(2643.33, 1);
     expect(result?.actualTdeeWindowDays).toBe(30);
     expect(prisma.nutritionTarget.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          actualTdee: expect.closeTo(2713.33, 1),
+          actualTdee: expect.closeTo(2643.33, 1),
           actualTdeeWindowDays: 30,
         }),
       }),
