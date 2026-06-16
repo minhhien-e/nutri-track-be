@@ -92,10 +92,10 @@ export class MaintainWeightGoal implements GoalProfile {
   }
 
   public calculateCalorieAdjustment(
-    tdee: number,
-    body: BodyProfile,
-    targetWeightKg: number,
-    days: number,
+    _tdee: number,
+    _body: BodyProfile,
+    _targetWeightKg: number,
+    _days: number,
   ): number {
     return 0;
   }

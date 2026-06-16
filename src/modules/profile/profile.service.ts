@@ -12,10 +12,6 @@ import { AdaptiveTdeeService } from "./domain/adaptive-tdee.service";
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
-const MIN_ADAPTIVE_TDEE_DAYS = 14;
-const MIN_ADAPTIVE_MEAL_LOG_DAYS = 7;
-const ACTUAL_TDEE_MIN_RATIO = 0.75;
-const ACTUAL_TDEE_MAX_RATIO = 1.25;
 
 const exerciseCompensationRatio: Record<Goal, number> = {
   loseWeight: 0.4,
