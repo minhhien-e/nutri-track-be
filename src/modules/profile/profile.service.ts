@@ -68,7 +68,7 @@ export class ProfileService {
       create: { userId, ...profileData },
     });
     const existingTarget = await this.prisma.nutritionTarget.findUnique({ where: { userId } });
-    const macroRatio = existingTarget?.macroRatio ?? "manual_exercise_baseline_v1";
+    const macroRatio = dto.macroRatio ?? existingTarget?.macroRatio ?? "manual_exercise_baseline_v1";
     const target = this.nutritionTargetService.calculate(dto, { macroRatio });
     const nutritionTarget = await this.prisma.nutritionTarget.upsert({
       where: { userId },
