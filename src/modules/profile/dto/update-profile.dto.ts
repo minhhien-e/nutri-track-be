@@ -7,6 +7,7 @@ import {
   IsInt,
   IsNumber,
   IsOptional,
+  IsString,
   Max,
   Min,
 } from "class-validator";
@@ -58,4 +59,9 @@ export class UpdateProfileDto {
   @ApiProperty({ enum: Goal })
   @IsEnum(Goal)
   goal: Goal;
+
+  @ApiProperty({ example: "balanced", required: false })
+  @IsOptional()
+  @IsString()
+  macroRatio?: string;
 }

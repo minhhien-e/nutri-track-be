@@ -50,7 +50,7 @@ export class ProfileService {
   }
 
   calculateTarget(dto: CalculateNutritionTargetDto) {
-    return this.nutritionTargetService.calculate(dto);
+    return this.nutritionTargetService.calculate(dto, { macroRatio: dto.macroRatio });
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
