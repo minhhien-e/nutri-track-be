@@ -29,7 +29,7 @@ export class DiaryService {
     await this.diaryRepository.createEntry({
       dailyRecord: { connect: { id: record.id } },
       foodItem: { connect: { id: food.id } },
-      mealType: dto.mealType,
+
       grams: dto.grams,
       ...nutrients,
     });
@@ -46,7 +46,7 @@ export class DiaryService {
     const nutrients = this.diaryTotalsService.scaleFood(food, grams);
     await this.diaryRepository.updateEntry(entryId, {
       foodItem: { connect: { id: food.id } },
-      mealType: dto.mealType ?? entry.mealType,
+
       grams,
       ...nutrients,
     });
@@ -79,7 +79,7 @@ export class DiaryService {
       return new MealEntry({
         id: entry.id,
         foodItem: domainFood,
-        mealType: entry.mealType,
+        foodItemId: entry.foodItemId,
         grams: entry.grams,
         calories: entry.calories,
         proteinG: entry.proteinG,

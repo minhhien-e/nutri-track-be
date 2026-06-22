@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { MealType } from '@prisma/client';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateMealEntryDto {
   @ApiPropertyOptional({ example: 'chicken-breast' })
@@ -8,10 +7,7 @@ export class UpdateMealEntryDto {
   @IsString()
   foodItemId?: string;
 
-  @ApiPropertyOptional({ enum: MealType })
   @IsOptional()
-  @IsEnum(MealType)
-  mealType?: MealType;
 
   @ApiPropertyOptional({ example: 150 })
   @IsOptional()

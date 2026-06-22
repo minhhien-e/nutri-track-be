@@ -31,12 +31,7 @@ enum UserRole {
   ADMIN
 }
 
-enum MealType {
-  breakfast
-  lunch
-  dinner
-  snack
-}
+
 
 enum FoodSource {
   adminCatalog
@@ -151,6 +146,7 @@ model FoodItem {
   mealEntries          MealEntry[]
   recentFoods          RecentFood[]
   mealPlanDefaultItems MealPlanDefaultItem[]
+  foodNutrients        FoodNutrient[]
 
   @@index([name])
   @@index([category])
@@ -174,7 +170,6 @@ model MealEntry {
   id            String      @id @default(uuid())
   dailyRecordId String
   foodItemId    String
-  mealType      MealType
   grams         Float
   calories      Float
   proteinG      Float
@@ -227,7 +222,6 @@ model MealPlanDefaultItem {
   id                String          @id @default(uuid())
   mealPlanDefaultId String
   foodItemId        String
-  mealType          MealType
   grams             Float
   sortOrder         Int             @default(0)
   mealPlanDefault   MealPlanDefault @relation(fields: [mealPlanDefaultId], references: [id], onDelete: Cascade)
@@ -235,4 +229,54 @@ model MealPlanDefaultItem {
 
   @@index([mealPlanDefaultId])
   @@index([foodItemId])
+}
+
+enum NutrientCategory {
+  vitamin
+  mineral
+  macro
+  other
+}
+
+model BodySystem {
+  id          String               @id @default(uuid())
+  name        String               @unique
+  description String?
+  nutrients   BodySystemNutrient[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model Nutrient {
+  id                 String               @id @default(uuid())
+  name               String               @unique
+  unit               String
+  category           NutrientCategory     @default(other)
+  defaultDailyTarget Float                @default(0)
+  bodySystems        BodySystemNutrient[]
+  foodItems          FoodNutrient[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model BodySystemNutrient {
+  id           String     @id @default(uuid())
+  bodySystemId String
+  nutrientId   String
+  impactLevel  Int        @default(1)
+  bodySystem   BodySystem @relation(fields: [bodySystemId], references: [id], onDelete: Cascade)
+  nutrient     Nutrient   @relation(fields: [nutrientId], references: [id], onDelete: Cascade)
+
+  @@unique([bodySystemId, nutrientId])
+}
+
+model FoodNutrient {
+  id            String   @id @default(uuid())
+  foodItemId    String
+  nutrientId    String
+  amountPer100g Float
+  foodItem      FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  nutrient      Nutrient @relation(fields: [nutrientId], references: [id], onDelete: Cascade)
+
+  @@unique([foodItemId, nutrientId])
 }

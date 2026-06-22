@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BodySystemsModule } from './modules/body-systems/body-systems.module';
 import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -29,6 +30,7 @@ import { envValidationSchema } from './config/env.validation';
     AuthModule,
     ProfileModule,
     FoodsModule,
+    BodySystemsModule,
     DiaryModule,
     MealPlansModule,
     HealthModule,

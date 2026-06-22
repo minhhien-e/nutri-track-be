@@ -1,4 +1,4 @@
-import { MealPlanDefaultScope, MealType } from '@prisma/client';
+import { MealPlanDefaultScope } from '@prisma/client';
 import { MealPlansService } from './meal-plans.service';
 
 const dayPlan = {
@@ -18,7 +18,7 @@ const dayPlan = {
       id: 'item-1',
       mealPlanDefaultId: 'day-plan',
       foodItemId: 'food-1',
-      mealType: MealType.breakfast,
+
       grams: 100,
       sortOrder: 0,
       foodItem: { id: 'food-1' },
@@ -122,7 +122,7 @@ describe('MealPlansService', () => {
       '2026-06-09',
       {
         foodItemId: 'food-1',
-        mealType: MealType.breakfast,
+
         grams: 100,
       },
     );

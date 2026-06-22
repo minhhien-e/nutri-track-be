@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { MealPlanDefaultScope, MealType } from '@prisma/client';
+import { MealPlanDefaultScope } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -20,10 +20,6 @@ export class MealPlanDefaultItemDto {
   @ApiProperty({ example: 'food-id' })
   @IsString()
   foodItemId: string;
-
-  @ApiProperty({ enum: MealType })
-  @IsEnum(MealType)
-  mealType: MealType;
 
   @ApiProperty({ example: 150 })
   @IsNumber()

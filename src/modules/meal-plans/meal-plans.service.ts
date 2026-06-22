@@ -64,7 +64,7 @@ export class MealPlansService {
         dto.items ??
         current.items.map((item) => ({
           foodItemId: item.foodItemId,
-          mealType: item.mealType,
+
           grams: item.grams,
           sortOrder: item.sortOrder,
         })),
@@ -91,7 +91,7 @@ export class MealPlansService {
           deleteMany: {},
           create: merged.items.map((item, index) => ({
             foodItem: { connect: { id: item.foodItemId } },
-            mealType: item.mealType,
+
             grams: item.grams,
             sortOrder: item.sortOrder ?? index,
           })),
@@ -130,7 +130,7 @@ export class MealPlansService {
     for (const item of plan.items) {
       updated = await this.diaryService.addMealEntry(userId, dateKey, {
         foodItemId: item.foodItemId,
-        mealType: item.mealType,
+
         grams: item.grams,
       });
     }
@@ -244,7 +244,7 @@ export class MealPlansService {
       items: {
         create: dto.items.map((item, index) => ({
           foodItem: { connect: { id: item.foodItemId } },
-          mealType: item.mealType,
+
           grams: item.grams,
           sortOrder: item.sortOrder ?? index,
         })),

@@ -1,4 +1,4 @@
-import { FoodSource, PrismaClient } from '@prisma/client';
+import { FoodSource, PrismaClient, NutrientCategory } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -10,29 +10,13 @@ type SeedFood = {
   proteinPer100g: number;
   carbsPer100g: number;
   totalFatPer100g: number;
-  saturatedFatPer100g?: number;
-  omega3Per100g?: number;
-  fiberPer100g?: number;
   imageAssetPath: string;
   category: string;
   displayTag: string;
+  nutrients: { name: string; amountPer100g: number }[];
 };
 
 const foods: SeedFood[] = [
-  {
-    id: 'rice',
-    name: 'Cơm trắng',
-    servingSizeG: 100,
-    caloriesPer100g: 130,
-    proteinPer100g: 2.7,
-    carbsPer100g: 28.2,
-    totalFatPer100g: 0.3,
-    saturatedFatPer100g: 0.1,
-    fiberPer100g: 0.4,
-    imageAssetPath: 'assets/images/food_rice.png',
-    category: 'Tinh bột',
-    displayTag: 'Món chính',
-  },
   {
     id: 'chicken-breast',
     name: 'Ức gà luộc',
@@ -41,67 +25,14 @@ const foods: SeedFood[] = [
     proteinPer100g: 31,
     carbsPer100g: 0,
     totalFatPer100g: 3.6,
-    saturatedFatPer100g: 1,
-    fiberPer100g: 0,
     imageAssetPath: 'assets/images/food_chicken.png',
     category: 'Đạm nạc',
     displayTag: 'Giàu protein',
-  },
-  {
-    id: 'egg',
-    name: 'Trứng gà',
-    servingSizeG: 50,
-    caloriesPer100g: 155,
-    proteinPer100g: 13,
-    carbsPer100g: 1.1,
-    totalFatPer100g: 11,
-    saturatedFatPer100g: 3.3,
-    omega3Per100g: 0.1,
-    fiberPer100g: 0,
-    imageAssetPath: 'assets/images/food_egg.png',
-    category: 'Đạm',
-    displayTag: 'Bữa sáng',
-  },
-  {
-    id: 'banana',
-    name: 'Chuối',
-    servingSizeG: 100,
-    caloriesPer100g: 89,
-    proteinPer100g: 1.1,
-    carbsPer100g: 23,
-    totalFatPer100g: 0.3,
-    saturatedFatPer100g: 0.1,
-    fiberPer100g: 2.6,
-    imageAssetPath: 'assets/images/food_banana.png',
-    category: 'Trái cây',
-    displayTag: 'Ăn vặt',
-  },
-  {
-    id: 'sweet-potato',
-    name: 'Khoai lang',
-    servingSizeG: 100,
-    caloriesPer100g: 86,
-    proteinPer100g: 1.6,
-    carbsPer100g: 20,
-    totalFatPer100g: 0.1,
-    fiberPer100g: 3,
-    imageAssetPath: 'assets/images/food_bowl.png',
-    category: 'Tinh bột',
-    displayTag: 'Nhiều xơ',
-  },
-  {
-    id: 'tofu',
-    name: 'Đậu phụ',
-    servingSizeG: 100,
-    caloriesPer100g: 76,
-    proteinPer100g: 8,
-    carbsPer100g: 1.9,
-    totalFatPer100g: 4.8,
-    saturatedFatPer100g: 0.7,
-    fiberPer100g: 0.3,
-    imageAssetPath: 'assets/images/food_tofu.png',
-    category: 'Đạm thực vật',
-    displayTag: 'Chay',
+    nutrients: [
+      { name: 'Magie', amountPer100g: 29 },
+      { name: 'Kali', amountPer100g: 256 },
+      { name: 'Kẽm', amountPer100g: 1.0 },
+    ],
   },
   {
     id: 'salmon-salad',
@@ -111,106 +42,152 @@ const foods: SeedFood[] = [
     proteinPer100g: 13,
     carbsPer100g: 4,
     totalFatPer100g: 8,
-    saturatedFatPer100g: 1.4,
-    omega3Per100g: 1.2,
-    fiberPer100g: 1.8,
     imageAssetPath: 'assets/images/food_salad.png',
     category: 'Cân bằng',
     displayTag: 'Omega-3',
+    nutrients: [
+      { name: 'Vitamin D', amountPer100g: 400 },
+      { name: 'Iốt', amountPer100g: 15 },
+      { name: 'Vitamin C', amountPer100g: 10 },
+      { name: 'Omega-3', amountPer100g: 1.2 },
+    ],
   },
   {
-    id: 'oatmeal-fruit',
-    name: 'Yến mạch trái cây',
-    servingSizeG: 220,
-    caloriesPer100g: 118,
-    proteinPer100g: 4.2,
-    carbsPer100g: 21,
-    totalFatPer100g: 2.1,
-    saturatedFatPer100g: 0.4,
-    fiberPer100g: 3.2,
+    id: 'sweet-potato',
+    name: 'Khoai lang',
+    servingSizeG: 100,
+    caloriesPer100g: 86,
+    proteinPer100g: 1.6,
+    carbsPer100g: 20,
+    totalFatPer100g: 0.1,
     imageAssetPath: 'assets/images/food_bowl.png',
-    category: 'Bữa sáng',
+    category: 'Tinh bột',
     displayTag: 'Nhiều xơ',
-  },
-  {
-    id: 'beef-pho',
-    name: 'Phở bò',
-    servingSizeG: 450,
-    caloriesPer100g: 92,
-    proteinPer100g: 6.2,
-    carbsPer100g: 12.8,
-    totalFatPer100g: 2.1,
-    saturatedFatPer100g: 0.8,
-    fiberPer100g: 0.6,
-    imageAssetPath: 'assets/images/food_soup.png',
-    category: 'Món Việt',
-    displayTag: 'Ấm bụng',
-  },
-  {
-    id: 'greek-yogurt',
-    name: 'Sữa chua Hy Lạp',
-    servingSizeG: 150,
-    caloriesPer100g: 97,
-    proteinPer100g: 9,
-    carbsPer100g: 3.6,
-    totalFatPer100g: 5,
-    saturatedFatPer100g: 3.1,
-    fiberPer100g: 0,
-    imageAssetPath: 'assets/images/food_bowl.png',
-    category: 'Đạm',
-    displayTag: 'Ít đường',
-  },
-  {
-    id: 'mixed-nuts',
-    name: 'Hạt tổng hợp',
-    servingSizeG: 30,
-    caloriesPer100g: 607,
-    proteinPer100g: 20,
-    carbsPer100g: 21,
-    totalFatPer100g: 54,
-    saturatedFatPer100g: 5,
-    omega3Per100g: 0.6,
-    fiberPer100g: 7,
-    imageAssetPath: 'assets/images/food_bowl.png',
-    category: 'Ăn vặt',
-    displayTag: 'Chất béo tốt',
-  },
-  {
-    id: 'brown-rice-chicken',
-    name: 'Cơm gạo lứt ức gà',
-    servingSizeG: 320,
-    caloriesPer100g: 151,
-    proteinPer100g: 12,
-    carbsPer100g: 17,
-    totalFatPer100g: 3.5,
-    saturatedFatPer100g: 0.8,
-    fiberPer100g: 2.2,
-    imageAssetPath: 'assets/images/food_chicken.png',
-    category: 'Cân bằng',
-    displayTag: 'Meal prep',
+    nutrients: [
+      { name: 'Vitamin A', amountPer100g: 709 },
+      { name: 'Vitamin C', amountPer100g: 2.4 },
+      { name: 'Canxi', amountPer100g: 30 },
+    ],
   },
 ];
 
 async function main() {
+  console.log('Seeding body systems...');
+  const muscularSystem = await prisma.bodySystem.upsert({
+    where: { name: 'Hệ cơ bắp' },
+    update: {},
+    create: { name: 'Hệ cơ bắp', description: 'Chịu trách nhiệm cho chuyển động và tăng cơ.' },
+  });
+
+  const endocrineSystem = await prisma.bodySystem.upsert({
+    where: { name: 'Hệ nội tiết' },
+    update: {},
+    create: { name: 'Hệ nội tiết', description: 'Điều hòa hormone, ảnh hưởng lớn đến quá trình đốt mỡ.' },
+  });
+
+  const skeletalSystem = await prisma.bodySystem.upsert({
+    where: { name: 'Hệ xương khớp' },
+    update: {},
+    create: { name: 'Hệ xương khớp', description: 'Hỗ trợ cấu trúc cơ thể và bảo vệ cơ quan nội tạng.' },
+  });
+
+  const immuneSystem = await prisma.bodySystem.upsert({
+    where: { name: 'Hệ miễn dịch' },
+    update: {},
+    create: { name: 'Hệ miễn dịch', description: 'Bảo vệ cơ thể khỏi bệnh tật.' },
+  });
+
+  console.log('Seeding nutrients...');
+  const nutrientsData = [
+    { name: 'Vitamin C', unit: 'mg', category: NutrientCategory.vitamin, defaultDailyTarget: 90 },
+    { name: 'Canxi', unit: 'mg', category: NutrientCategory.mineral, defaultDailyTarget: 1000 },
+    { name: 'Magie', unit: 'mg', category: NutrientCategory.mineral, defaultDailyTarget: 400 },
+    { name: 'Kẽm', unit: 'mg', category: NutrientCategory.mineral, defaultDailyTarget: 11 },
+    { name: 'Iốt', unit: 'mcg', category: NutrientCategory.mineral, defaultDailyTarget: 150 },
+    { name: 'Vitamin D', unit: 'IU', category: NutrientCategory.vitamin, defaultDailyTarget: 600 },
+    { name: 'Kali', unit: 'mg', category: NutrientCategory.mineral, defaultDailyTarget: 4700 },
+    { name: 'Omega-3', unit: 'g', category: NutrientCategory.macro, defaultDailyTarget: 1.6 },
+    { name: 'Vitamin A', unit: 'mcg', category: NutrientCategory.vitamin, defaultDailyTarget: 900 },
+  ];
+
+  const nutrientMap = new Map<string, string>();
+  for (const n of nutrientsData) {
+    const nutrient = await prisma.nutrient.upsert({
+      where: { name: n.name },
+      update: {},
+      create: n,
+    });
+    nutrientMap.set(n.name, nutrient.id);
+  }
+
+  console.log('Mapping body systems to nutrients...');
+  const systemNutrients = [
+    { bodySystemId: muscularSystem.id, nutrientId: nutrientMap.get('Magie')!, impactLevel: 2 },
+    { bodySystemId: muscularSystem.id, nutrientId: nutrientMap.get('Kali')!, impactLevel: 2 },
+    { bodySystemId: endocrineSystem.id, nutrientId: nutrientMap.get('Iốt')!, impactLevel: 3 },
+    { bodySystemId: endocrineSystem.id, nutrientId: nutrientMap.get('Kẽm')!, impactLevel: 2 },
+    { bodySystemId: endocrineSystem.id, nutrientId: nutrientMap.get('Vitamin D')!, impactLevel: 2 },
+    { bodySystemId: skeletalSystem.id, nutrientId: nutrientMap.get('Canxi')!, impactLevel: 3 },
+    { bodySystemId: skeletalSystem.id, nutrientId: nutrientMap.get('Vitamin D')!, impactLevel: 2 },
+    { bodySystemId: immuneSystem.id, nutrientId: nutrientMap.get('Vitamin C')!, impactLevel: 3 },
+    { bodySystemId: immuneSystem.id, nutrientId: nutrientMap.get('Kẽm')!, impactLevel: 2 },
+  ];
+
+  for (const sn of systemNutrients) {
+    await prisma.bodySystemNutrient.upsert({
+      where: {
+        bodySystemId_nutrientId: {
+          bodySystemId: sn.bodySystemId,
+          nutrientId: sn.nutrientId,
+        },
+      },
+      update: { impactLevel: sn.impactLevel },
+      create: sn,
+    });
+  }
+
+  console.log('Seeding foods and mapping nutrients...');
   for (const food of foods) {
-    await prisma.foodItem.upsert({
+    const { nutrients, ...foodData } = food;
+    const foodItem = await prisma.foodItem.upsert({
       where: { id: food.id },
       update: {
-        ...food,
+        ...foodData,
         fatPer100g: food.totalFatPer100g,
         transFatPer100g: 0,
         source: FoodSource.adminCatalog,
         isActive: true,
       },
       create: {
-        ...food,
+        ...foodData,
         fatPer100g: food.totalFatPer100g,
         transFatPer100g: 0,
         source: FoodSource.adminCatalog,
         isActive: true,
       },
     });
+
+    for (const n of nutrients) {
+      const nutrientId = nutrientMap.get(n.name);
+      if (nutrientId) {
+        await prisma.foodNutrient.upsert({
+          where: {
+            foodItemId_nutrientId: {
+              foodItemId: foodItem.id,
+              nutrientId: nutrientId,
+            },
+          },
+          update: { amountPer100g: n.amountPer100g },
+          create: {
+            foodItemId: foodItem.id,
+            nutrientId: nutrientId,
+            amountPer100g: n.amountPer100g,
+          },
+        });
+      }
+    }
   }
+  console.log('Seed completed successfully!');
 }
 
 main()

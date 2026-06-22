@@ -1,10 +1,9 @@
-import { MealType } from "@prisma/client";
 import { FoodItem } from "../../foods/domain/food-item";
 
 export class MealEntry {
   public readonly id: string;
   public readonly foodItem: FoodItem;
-  public readonly mealType: MealType;
+  public readonly foodItemId: string;
   public readonly grams: number;
   public calories: number;
   public proteinG: number;
@@ -19,7 +18,7 @@ export class MealEntry {
   constructor(data: {
     id: string;
     foodItem: FoodItem;
-    mealType: MealType;
+    foodItemId: string;
     grams: number;
     calories?: number;
     proteinG?: number;
@@ -33,7 +32,7 @@ export class MealEntry {
   }) {
     this.id = data.id;
     this.foodItem = data.foodItem;
-    this.mealType = data.mealType;
+    this.foodItemId = data.foodItemId;
     this.grams = data.grams;
 
     if (
