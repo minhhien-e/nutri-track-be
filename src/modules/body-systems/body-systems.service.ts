@@ -17,6 +17,11 @@ export class BodySystemsService {
     });
   }
 
+  async getTheory() {
+    // Return all body systems with their associated nutrients and full descriptions
+    return this.findAll();
+  }
+
   async getDailyStatus(userId: string, dateKey: string) {
     // Tạo mảng 7 ngày gần nhất
     const targetDate = new Date(dateKey);

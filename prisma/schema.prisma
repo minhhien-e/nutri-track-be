@@ -253,6 +253,9 @@ model Nutrient {
   unit               String
   category           NutrientCategory     @default(other)
   defaultDailyTarget Float                @default(0)
+  description        String?
+  benefits           String?
+  foodSources        String?
   bodySystems        BodySystemNutrient[]
   foodItems          FoodNutrient[]
   createdAt          DateTime             @default(now())

@@ -14,6 +14,12 @@ export class BodySystemsController {
     return this.bodySystemsService.findAll();
   }
 
+  @Get('theory')
+  @ApiOperation({ summary: 'Get comprehensive body systems theory and nutrient knowledge' })
+  async getTheory() {
+    return this.bodySystemsService.getTheory();
+  }
+
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('status')
