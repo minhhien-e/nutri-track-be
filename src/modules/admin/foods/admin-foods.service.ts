@@ -32,12 +32,12 @@ export class AdminFoodsService {
       ...this.toCreateData(dto),
       source: dto.source ?? FoodSource.adminCatalog,
       isActive: true,
-    });
+    }, dto.nutrients);
   }
 
   async update(id: string, dto: UpdateAdminFoodDto) {
     await this.foodsService.getAnyById(id);
-    return this.foodsRepository.updateCatalog(id, this.toUpdateData(dto));
+    return this.foodsRepository.updateCatalog(id, this.toUpdateData(dto), dto.nutrients);
   }
 
   async updateStatus(id: string, isActive: boolean) {

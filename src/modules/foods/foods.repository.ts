@@ -196,7 +196,7 @@ export class FoodsRepository {
     return this.prisma.foodItem.create({ data });
   }
 
-  upsertCatalog(data: Prisma.FoodItemUncheckedCreateInput) {
+  upsertCatalog(data: Prisma.FoodItemUncheckedCreateInput, nutrients?: Record<string, number>) {
     const name = data.name.trim();
     const brandName =
       typeof data.brandName === "string" && data.brandName.trim()
@@ -228,26 +228,94 @@ export class FoodsRepository {
         ownerUserId: null,
         isActive: true,
       };
+      
+      let foodItem;
       if (duplicates.length === 0) {
-        return transaction.foodItem.create({ data: normalizedData });
+        foodItem = await transaction.foodItem.create({ data: normalizedData });
+      } else {
+        const [canonical, ...redundant] = duplicates;
+        foodItem = await transaction.foodItem.update({
+          where: { id: canonical.id },
+          data: normalizedData,
+        });
+        if (redundant.length > 0) {
+          await transaction.foodItem.updateMany({
+            where: { id: { in: redundant.map((item) => item.id) } },
+            data: { isActive: false },
+          });
+        }
       }
 
-      const [canonical, ...redundant] = duplicates;
-      const updated = await transaction.foodItem.update({
-        where: { id: canonical.id },
-        data: normalizedData,
-      });
-      if (redundant.length > 0) {
-        await transaction.foodItem.updateMany({
-          where: { id: { in: redundant.map((item) => item.id) } },
-          data: { isActive: false },
-        });
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        // Upsert all nutrients
+        for (const [nutrientName, amountPer100g] of Object.entries(nutrients)) {
+          let nutrient = await transaction.nutrient.findFirst({
+            where: { name: { equals: nutrientName.trim(), mode: Prisma.QueryMode.insensitive } },
+          });
+          if (!nutrient) {
+            nutrient = await transaction.nutrient.create({
+              data: {
+                name: nutrientName.trim(),
+                unit: 'mg',
+                category: 'other',
+              },
+            });
+          }
+          await transaction.foodNutrient.upsert({
+            where: {
+              foodItemId_nutrientId: {
+                foodItemId: foodItem.id,
+                nutrientId: nutrient.id,
+              },
+            },
+            update: { amountPer100g },
+            create: {
+              foodItemId: foodItem.id,
+              nutrientId: nutrient.id,
+              amountPer100g,
+            },
+          });
+        }
       }
-      return updated;
+
+      return foodItem;
     });
   }
 
-  updateCatalog(id: string, data: Prisma.FoodItemUpdateInput) {
-    return this.prisma.foodItem.update({ where: { id }, data });
+  updateCatalog(id: string, data: Prisma.FoodItemUpdateInput, nutrients?: Record<string, number>) {
+    return this.prisma.$transaction(async (transaction) => {
+      const foodItem = await transaction.foodItem.update({ where: { id }, data });
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        for (const [nutrientName, amountPer100g] of Object.entries(nutrients)) {
+          let nutrient = await transaction.nutrient.findFirst({
+            where: { name: { equals: nutrientName.trim(), mode: Prisma.QueryMode.insensitive } },
+          });
+          if (!nutrient) {
+            nutrient = await transaction.nutrient.create({
+              data: {
+                name: nutrientName.trim(),
+                unit: 'mg',
+                category: 'other',
+              },
+            });
+          }
+          await transaction.foodNutrient.upsert({
+            where: {
+              foodItemId_nutrientId: {
+                foodItemId: foodItem.id,
+                nutrientId: nutrient.id,
+              },
+            },
+            update: { amountPer100g },
+            create: {
+              foodItemId: foodItem.id,
+              nutrientId: nutrient.id,
+              amountPer100g,
+            },
+          });
+        }
+      }
+      return foodItem;
+    });
   }
 }

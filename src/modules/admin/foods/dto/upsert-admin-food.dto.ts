@@ -80,6 +80,13 @@ export class CreateAdminFoodDto {
   @IsOptional()
   @IsEnum(FoodSource)
   source?: FoodSource;
+
+  @ApiPropertyOptional({
+    description: 'Dynamic mapping of nutrient names to their amounts per 100g',
+    example: { 'Vitamin A': 100, Sắt: 2.5 },
+  })
+  @IsOptional()
+  nutrients?: Record<string, number>;
 }
 
 export class UpdateAdminFoodDto extends PartialType(CreateAdminFoodDto) {}
