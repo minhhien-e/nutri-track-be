@@ -1,5 +1,5 @@
 import { FoodSource } from "@prisma/client";
-import { AdminFoodsService } from "./admin-foods.service";
+import { AdminFoodsService } from '@/modules/admin/foods/admin-foods.service';
 
 describe("AdminFoodsService", () => {
   it("upserts catalog food instead of always creating a new row", async () => {

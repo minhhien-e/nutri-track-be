@@ -1,7 +1,7 @@
 import { Goal } from "@prisma/client";
-import { BodyProfile } from "./body-profile";
-import { GoalProfile } from "./goal-profile.interface";
-import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
+import { BodyProfile } from '@/modules/profile/domain/body-profile';
+import { GoalProfile } from '@/modules/profile/domain/goal-profile.interface';
+import { NUTRITION_CONFIG } from '@/config/nutrition.config';
 
 export class LoseWeightGoal implements GoalProfile {
   public getGoalType(): Goal {

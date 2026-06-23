@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { AdminBodySystemsService } from './body-systems.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../auth/guards/admin.guard';
+import { AdminBodySystemsService } from '@/modules/admin/body-systems/body-systems.service';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { AdminGuard } from '@/modules/auth/guards/admin.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('admin-body-systems')

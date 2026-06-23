@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BodySystemsController } from './body-systems.controller';
+import { BodySystemsController } from '@/modules/admin/body-systems/body-systems.controller';
 
 describe('BodySystemsController', () => {
   let controller: BodySystemsController;

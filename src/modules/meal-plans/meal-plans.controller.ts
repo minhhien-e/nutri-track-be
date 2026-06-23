@@ -13,15 +13,15 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   CurrentUser,
   CurrentUser as CurrentUserType,
-} from '../../common/decorators/current-user.decorator';
-import { DateKeyPipe } from '../../common/pipes/date-key.pipe';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UpdateMealPlanEnabledDto } from './dto/update-meal-plan-enabled.dto';
+} from '@/common/decorators/current-user.decorator';
+import { DateKeyPipe } from '@/common/pipes/date-key.pipe';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { UpdateMealPlanEnabledDto } from '@/modules/meal-plans/dto/update-meal-plan-enabled.dto';
 import {
   CreateMealPlanDefaultDto,
   UpdateMealPlanDefaultDto,
-} from './dto/upsert-meal-plan-default.dto';
-import { MealPlansService } from './meal-plans.service';
+} from '@/modules/meal-plans/dto/upsert-meal-plan-default.dto';
+import { MealPlansService } from '@/modules/meal-plans/meal-plans.service';
 
 @ApiTags('meal-plans')
 @ApiBearerAuth()

@@ -1,4 +1,4 @@
-import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
+import { NUTRITION_CONFIG } from '@/config/nutrition.config';
 
 export interface WeightLog {
   measuredDate: Date;

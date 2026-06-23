@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUser as CurrentUserType } from '../../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
-import { FoodQueryDto } from './dto/food-query.dto';
-import { FoodsService } from './foods.service';
+import { CurrentUser, CurrentUser as CurrentUserType } from '@/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { CreateCustomFoodDto } from '@/modules/foods/dto/create-custom-food.dto';
+import { FoodQueryDto } from '@/modules/foods/dto/food-query.dto';
+import { FoodsService } from '@/modules/foods/foods.service';
 
 @ApiTags('foods')
 @ApiBearerAuth()

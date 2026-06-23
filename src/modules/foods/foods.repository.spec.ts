@@ -1,4 +1,4 @@
-import { FoodsRepository } from "./foods.repository";
+import { FoodsRepository } from '@/modules/foods/foods.repository';
 
 describe("FoodsRepository", () => {
   it("limits user search to active public foods and active user custom foods", async () => {

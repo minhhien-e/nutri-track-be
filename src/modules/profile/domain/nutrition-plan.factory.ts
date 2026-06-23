@@ -1,8 +1,8 @@
-import type { User } from "./user.aggregate";
-import { NutritionPlan } from "./nutrition-plan";
+import type { User } from '@/modules/profile/domain/user.aggregate';
+import { NutritionPlan } from '@/modules/profile/domain/nutrition-plan';
 import { Gender, Goal } from "@prisma/client";
-import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
-import { MacroStrategyFactory } from "./macro-distribution.strategies";
+import { NUTRITION_CONFIG } from '@/config/nutrition.config';
+import { MacroStrategyFactory } from '@/modules/profile/domain/macro-distribution.strategies';
 
 export class NutritionPlanFactory {
   public static createPlan(user: User, actualTdee: number | null = null): NutritionPlan {

@@ -1,5 +1,5 @@
-import { MealEntry } from "./meal-entry";
-import type { NutritionPlan } from "../../profile/domain/nutrition-plan";
+import { MealEntry } from '@/modules/diary/domain/meal-entry';
+import type { NutritionPlan } from '@/modules/profile/domain/nutrition-plan';
 
 export interface NutrientTotals {
   calories: number;

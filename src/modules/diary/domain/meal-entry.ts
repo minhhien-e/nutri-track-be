@@ -1,4 +1,4 @@
-import { FoodItem } from "../../foods/domain/food-item";
+import { FoodItem } from '@/modules/foods/domain/food-item';
 
 export class MealEntry {
   public readonly id: string;

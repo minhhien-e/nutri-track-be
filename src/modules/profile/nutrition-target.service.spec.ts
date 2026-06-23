@@ -1,5 +1,5 @@
 import { ActivityLevel, Gender, Goal } from '@prisma/client';
-import { NutritionTargetService } from './nutrition-target.service';
+import { NutritionTargetService } from '@/modules/profile/nutrition-target.service';
 
 describe('NutritionTargetService', () => {
   it('calculates low baseline TDEE and goal macros for weight loss', () => {

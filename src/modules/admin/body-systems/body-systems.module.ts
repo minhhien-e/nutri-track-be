@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AdminBodySystemsService } from './body-systems.service';
-import { AdminBodySystemsController } from './body-systems.controller';
-import { PrismaModule } from '../../../database/prisma.module';
+import { AdminBodySystemsService } from '@/modules/admin/body-systems/body-systems.service';
+import { AdminBodySystemsController } from '@/modules/admin/body-systems/body-systems.controller';
+import { PrismaModule } from '@/database/prisma.module';
 
 @Module({
   imports: [PrismaModule],

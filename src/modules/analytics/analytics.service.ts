@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DailyRecord, MealEntry, NutritionTarget, UserProfile } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { DiaryTotalsService } from '../diary/diary-totals.service';
+import { PrismaService } from '@/database/prisma.service';
+import { DiaryTotalsService } from '@/modules/diary/diary-totals.service';
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;

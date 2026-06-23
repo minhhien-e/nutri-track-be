@@ -1,5 +1,5 @@
 import { Goal } from "@prisma/client";
-import { BodyProfile } from "./body-profile";
+import { BodyProfile } from '@/modules/profile/domain/body-profile';
 
 export interface GoalProfile {
   getGoalType(): Goal;

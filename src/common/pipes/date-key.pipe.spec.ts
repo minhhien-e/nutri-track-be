@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { DateKeyPipe } from './date-key.pipe';
+import { DateKeyPipe } from '@/common/pipes/date-key.pipe';
 
 describe('DateKeyPipe', () => {
   it('accepts a valid YYYY-MM-DD date', () => {

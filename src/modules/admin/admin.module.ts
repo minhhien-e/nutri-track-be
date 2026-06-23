@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { FoodsModule } from '../foods/foods.module';
-import { AdminFoodsController } from './foods/admin-foods.controller';
-import { AdminFoodsService } from './foods/admin-foods.service';
-import { AdminNutrientsModule } from './nutrients/nutrients.module';
-import { AdminBodySystemsModule } from './body-systems/body-systems.module';
+import { FoodsModule } from '@/modules/foods/foods.module';
+import { AdminFoodsController } from '@/modules/admin/foods/admin-foods.controller';
+import { AdminFoodsService } from '@/modules/admin/foods/admin-foods.service';
+import { AdminNutrientsModule } from '@/modules/admin/nutrients/nutrients.module';
+import { AdminBodySystemsModule } from '@/modules/admin/body-systems/body-systems.module';
 
 @Module({
   imports: [FoodsModule, AdminNutrientsModule, AdminBodySystemsModule],

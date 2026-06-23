@@ -1,8 +1,8 @@
-import { BodyProfile } from "./body-profile";
-import { ActivityProfile } from "./activity-profile";
-import { GoalProfile } from "./goal-profile.interface";
-import { NutritionPlan } from "./nutrition-plan";
-import { NutritionPlanFactory } from "./nutrition-plan.factory";
+import { BodyProfile } from '@/modules/profile/domain/body-profile';
+import { ActivityProfile } from '@/modules/profile/domain/activity-profile';
+import { GoalProfile } from '@/modules/profile/domain/goal-profile.interface';
+import { NutritionPlan } from '@/modules/profile/domain/nutrition-plan';
+import { NutritionPlanFactory } from '@/modules/profile/domain/nutrition-plan.factory';
 
 export class User {
   constructor(

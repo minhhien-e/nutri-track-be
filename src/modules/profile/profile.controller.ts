@@ -12,12 +12,12 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   CurrentUser as CurrentUserType,
-} from "../../common/decorators/current-user.decorator";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { CalculateNutritionTargetDto } from "./dto/calculate-nutrition-target.dto";
-import { UpdateProfileDto } from "./dto/update-profile.dto";
-import { UpsertWeeklyWeightLogDto } from "./dto/upsert-weekly-weight-log.dto";
-import { ProfileService } from "./profile.service";
+} from '@/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { CalculateNutritionTargetDto } from '@/modules/profile/dto/calculate-nutrition-target.dto';
+import { UpdateProfileDto } from '@/modules/profile/dto/update-profile.dto';
+import { UpsertWeeklyWeightLogDto } from '@/modules/profile/dto/upsert-weekly-weight-log.dto';
+import { ProfileService } from '@/modules/profile/profile.service';
 
 @ApiTags("profile")
 @ApiBearerAuth()

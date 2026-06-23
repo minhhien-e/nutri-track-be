@@ -1,6 +1,6 @@
 import { Goal } from "@prisma/client";
-import { MacroDistributionStrategy } from "./macro-distribution.interface";
-import { NUTRITION_CONFIG } from "../../../config/nutrition.config";
+import { MacroDistributionStrategy } from '@/modules/profile/domain/macro-distribution.interface';
+import { NUTRITION_CONFIG } from '@/config/nutrition.config';
 
 export class LegacyMacroStrategy implements MacroDistributionStrategy {
   private static readonly proteinByGoal: Record<Goal, number> = {

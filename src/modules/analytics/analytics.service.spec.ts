@@ -1,5 +1,5 @@
-import { AnalyticsService } from './analytics.service';
-import { DiaryTotalsService } from '../diary/diary-totals.service';
+import { AnalyticsService } from '@/modules/analytics/analytics.service';
+import { DiaryTotalsService } from '@/modules/diary/diary-totals.service';
 
 const target = {
   waterMl: 2100,

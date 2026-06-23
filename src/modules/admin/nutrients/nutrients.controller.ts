@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
-import { AdminNutrientsService } from './nutrients.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../auth/guards/admin.guard';
+import { AdminNutrientsService } from '@/modules/admin/nutrients/nutrients.service';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { AdminGuard } from '@/modules/auth/guards/admin.guard';
 import { NutrientCategory } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 

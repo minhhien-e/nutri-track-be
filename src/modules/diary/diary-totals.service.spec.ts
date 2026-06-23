@@ -1,4 +1,4 @@
-import { DiaryTotalsService } from './diary-totals.service';
+import { DiaryTotalsService } from '@/modules/diary/diary-totals.service';
 
 describe('DiaryTotalsService', () => {
   it('scales food nutrition by grams', () => {

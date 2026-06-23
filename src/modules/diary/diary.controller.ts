@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUser as CurrentUserType } from '../../common/decorators/current-user.decorator';
-import { DateKeyPipe } from '../../common/pipes/date-key.pipe';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { DiaryService } from './diary.service';
-import { CreateMealEntryDto } from './dto/create-meal-entry.dto';
-import { UpdateExerciseDto } from './dto/update-exercise.dto';
-import { UpdateMealEntryDto } from './dto/update-meal-entry.dto';
-import { UpdateWaterDto } from './dto/update-water.dto';
+import { CurrentUser, CurrentUser as CurrentUserType } from '@/common/decorators/current-user.decorator';
+import { DateKeyPipe } from '@/common/pipes/date-key.pipe';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { DiaryService } from '@/modules/diary/diary.service';
+import { CreateMealEntryDto } from '@/modules/diary/dto/create-meal-entry.dto';
+import { UpdateExerciseDto } from '@/modules/diary/dto/update-exercise.dto';
+import { UpdateMealEntryDto } from '@/modules/diary/dto/update-meal-entry.dto';
+import { UpdateWaterDto } from '@/modules/diary/dto/update-water.dto';
 
 @ApiTags('diary')
 @ApiBearerAuth()

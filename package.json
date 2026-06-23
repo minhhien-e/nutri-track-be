@@ -4,7 +4,7 @@
   "private": true,
   "description": "NutriTrack NestJS backend",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && tsc-alias",
     "start": "prisma migrate deploy && node dist/src/main.js",
     "start:dev": "nest start --watch",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --fix=false",
@@ -55,6 +55,7 @@
     "ts-jest": "^29.4.4",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.17",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"

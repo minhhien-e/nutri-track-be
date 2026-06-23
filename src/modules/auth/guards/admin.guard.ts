@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @Injectable()
 export class AdminGuard implements CanActivate {

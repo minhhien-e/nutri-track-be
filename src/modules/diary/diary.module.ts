@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { FoodsModule } from '../foods/foods.module';
-import { DiaryController } from './diary.controller';
-import { DiaryRepository } from './diary.repository';
-import { DiaryService } from './diary.service';
-import { DiaryTotalsService } from './diary-totals.service';
+import { FoodsModule } from '@/modules/foods/foods.module';
+import { DiaryController } from '@/modules/diary/diary.controller';
+import { DiaryRepository } from '@/modules/diary/diary.repository';
+import { DiaryService } from '@/modules/diary/diary.service';
+import { DiaryTotalsService } from '@/modules/diary/diary-totals.service';
 
 @Module({
   imports: [FoodsModule],

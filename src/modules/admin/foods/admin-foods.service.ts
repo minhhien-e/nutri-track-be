@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { FoodSource, Prisma } from "@prisma/client";
-import { FoodsRepository } from "../../foods/foods.repository";
-import { FoodsService } from "../../foods/foods.service";
-import { AdminFoodQueryDto } from "./dto/admin-food-query.dto";
+import { FoodsRepository } from '@/modules/foods/foods.repository';
+import { FoodsService } from '@/modules/foods/foods.service';
+import { AdminFoodQueryDto } from '@/modules/admin/foods/dto/admin-food-query.dto';
 import {
   CreateAdminFoodDto,
   UpdateAdminFoodDto,
-} from "./dto/upsert-admin-food.dto";
+} from '@/modules/admin/foods/dto/upsert-admin-food.dto';
 
 @Injectable()
 export class AdminFoodsService {

@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { FoodsService } from '../foods/foods.service';
-import { CreateMealEntryDto } from './dto/create-meal-entry.dto';
-import { UpdateMealEntryDto } from './dto/update-meal-entry.dto';
-import { DiaryRepository } from './diary.repository';
-import { DiaryTotalsService } from './diary-totals.service';
-import { FoodItem } from '../foods/domain/food-item';
-import { MealEntry } from './domain/meal-entry';
-import { DailyRecord } from './domain/daily-record';
-import { domainEventEmitter } from '../../common/event-emitter';
+import { FoodsService } from '@/modules/foods/foods.service';
+import { CreateMealEntryDto } from '@/modules/diary/dto/create-meal-entry.dto';
+import { UpdateMealEntryDto } from '@/modules/diary/dto/update-meal-entry.dto';
+import { DiaryRepository } from '@/modules/diary/diary.repository';
+import { DiaryTotalsService } from '@/modules/diary/diary-totals.service';
+import { FoodItem } from '@/modules/foods/domain/food-item';
+import { MealEntry } from '@/modules/diary/domain/meal-entry';
+import { DailyRecord } from '@/modules/diary/domain/daily-record';
+import { domainEventEmitter } from '@/common/event-emitter';
 
 @Injectable()
 export class DiaryService {

@@ -1,6 +1,6 @@
 import { ActivityLevel, Gender, Goal } from "@prisma/client";
-import { NutritionTargetService } from "./nutrition-target.service";
-import { ProfileService } from "./profile.service";
+import { NutritionTargetService } from '@/modules/profile/nutrition-target.service';
+import { ProfileService } from '@/modules/profile/profile.service';
 
 describe("ProfileService target overview calories", () => {
   const profile = {

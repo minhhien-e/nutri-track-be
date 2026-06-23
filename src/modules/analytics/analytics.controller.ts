@@ -1,9 +1,9 @@
 import { BadRequestException, Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, CurrentUser as CurrentUserType } from '../../common/decorators/current-user.decorator';
-import { DateKeyPipe } from '../../common/pipes/date-key.pipe';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AnalyticsService } from './analytics.service';
+import { CurrentUser, CurrentUser as CurrentUserType } from '@/common/decorators/current-user.decorator';
+import { DateKeyPipe } from '@/common/pipes/date-key.pipe';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { AnalyticsService } from '@/modules/analytics/analytics.service';
 
 @ApiTags('analytics')
 @ApiBearerAuth()

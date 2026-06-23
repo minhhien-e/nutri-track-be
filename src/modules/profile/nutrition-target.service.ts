@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { UpdateProfileDto } from "./dto/update-profile.dto";
-import { BodyProfile } from "./domain/body-profile";
-import { ActivityProfile } from "./domain/activity-profile";
-import { GoalProfileFactory } from "./domain/goal-profile.strategies";
-import { User } from "./domain/user.aggregate";
+import { UpdateProfileDto } from '@/modules/profile/dto/update-profile.dto';
+import { BodyProfile } from '@/modules/profile/domain/body-profile';
+import { ActivityProfile } from '@/modules/profile/domain/activity-profile';
+import { GoalProfileFactory } from '@/modules/profile/domain/goal-profile.strategies';
+import { User } from '@/modules/profile/domain/user.aggregate';
 
 export const MACRO_FORMULA_VERSION = "manual_exercise_baseline_v1";
 

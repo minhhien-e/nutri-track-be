@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { FoodItem } from "../foods/domain/food-item";
+import { FoodItem } from '@/modules/foods/domain/food-item';
 
 type NutrientEntry = {
   calories: number;

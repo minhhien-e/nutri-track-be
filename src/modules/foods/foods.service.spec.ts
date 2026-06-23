@@ -1,5 +1,5 @@
 import { FoodSource } from '@prisma/client';
-import { FoodsService } from './foods.service';
+import { FoodsService } from '@/modules/foods/foods.service';
 
 const food = {
   id: 'rice',

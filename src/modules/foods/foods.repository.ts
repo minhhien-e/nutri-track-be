@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { FoodSource, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { CreateCustomFoodDto } from "./dto/create-custom-food.dto";
-import { FoodQueryDto } from "./dto/food-query.dto";
+import { PrismaService } from '@/database/prisma.service';
+import { CreateCustomFoodDto } from '@/modules/foods/dto/create-custom-food.dto';
+import { FoodQueryDto } from '@/modules/foods/dto/food-query.dto';
 
 @Injectable()
 export class FoodsRepository {

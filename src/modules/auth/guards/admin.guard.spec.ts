@@ -1,6 +1,6 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import { AdminGuard } from './admin.guard';
+import { AdminGuard } from '@/modules/auth/guards/admin.guard';
 
 function contextWithRole(role?: string) {
   return {

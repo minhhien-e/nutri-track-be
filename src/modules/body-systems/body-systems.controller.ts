@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
-import { BodySystemsService } from './body-systems.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BodySystemsService } from '@/modules/body-systems/body-systems.service';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('body-systems')

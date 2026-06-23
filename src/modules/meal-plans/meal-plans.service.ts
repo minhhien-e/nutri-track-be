@@ -4,13 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MealPlanDefaultScope, Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { DiaryService } from '../diary/diary.service';
-import { FoodsService } from '../foods/foods.service';
+import { PrismaService } from '@/database/prisma.service';
+import { DiaryService } from '@/modules/diary/diary.service';
+import { FoodsService } from '@/modules/foods/foods.service';
 import {
   CreateMealPlanDefaultDto,
   UpdateMealPlanDefaultDto,
-} from './dto/upsert-meal-plan-default.dto';
+} from '@/modules/meal-plans/dto/upsert-meal-plan-default.dto';
 
 const defaultInclude = {
   items: {

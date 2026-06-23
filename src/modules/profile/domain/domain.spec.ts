@@ -1,8 +1,8 @@
 import { ActivityLevel, Gender, Goal } from "@prisma/client";
-import { BodyProfile } from "./body-profile";
-import { ActivityProfile } from "./activity-profile";
-import { GoalProfileFactory } from "./goal-profile.strategies";
-import { User } from "./user.aggregate";
+import { BodyProfile } from '@/modules/profile/domain/body-profile';
+import { ActivityProfile } from '@/modules/profile/domain/activity-profile';
+import { GoalProfileFactory } from '@/modules/profile/domain/goal-profile.strategies';
+import { User } from '@/modules/profile/domain/user.aggregate';
 
 describe("Domain Models Unit Tests", () => {
   it("calculates low baseline TDEE and goal macros for weight loss", () => {

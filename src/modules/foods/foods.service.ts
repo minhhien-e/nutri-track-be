@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateCustomFoodDto } from './dto/create-custom-food.dto';
-import { FoodQueryDto } from './dto/food-query.dto';
-import { toFoodResponse } from './dto/food-response.dto';
-import { FoodsRepository } from './foods.repository';
+import { CreateCustomFoodDto } from '@/modules/foods/dto/create-custom-food.dto';
+import { FoodQueryDto } from '@/modules/foods/dto/food-query.dto';
+import { toFoodResponse } from '@/modules/foods/dto/food-response.dto';
+import { FoodsRepository } from '@/modules/foods/foods.repository';
 
 @Injectable()
 export class FoodsService {

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { domainEventEmitter } from "../../../common/event-emitter";
-import { ProfileService } from "../profile.service";
+import { domainEventEmitter } from '@/common/event-emitter';
+import { ProfileService } from '@/modules/profile/profile.service';
 
 @Injectable()
 export class AdaptiveTdeeListener implements OnModuleInit {

@@ -1,5 +1,5 @@
 import { MealPlanDefaultScope } from '@prisma/client';
-import { MealPlansService } from './meal-plans.service';
+import { MealPlansService } from '@/modules/meal-plans/meal-plans.service';
 
 const dayPlan = {
   id: 'day-plan',

@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { Goal, NutritionTarget } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { CalculateNutritionTargetDto } from "./dto/calculate-nutrition-target.dto";
-import { UpdateProfileDto } from "./dto/update-profile.dto";
-import { UpsertWeeklyWeightLogDto } from "./dto/upsert-weekly-weight-log.dto";
+import { PrismaService } from '@/database/prisma.service';
+import { CalculateNutritionTargetDto } from '@/modules/profile/dto/calculate-nutrition-target.dto';
+import { UpdateProfileDto } from '@/modules/profile/dto/update-profile.dto';
+import { UpsertWeeklyWeightLogDto } from '@/modules/profile/dto/upsert-weekly-weight-log.dto';
 import {
   MACRO_FORMULA_VERSION,
   NutritionTargetService,
-} from "./nutrition-target.service";
-import { AdaptiveTdeeService } from "./domain/adaptive-tdee.service";
-import { domainEventEmitter } from "../../common/event-emitter";
+} from '@/modules/profile/nutrition-target.service';
+import { AdaptiveTdeeService } from '@/modules/profile/domain/adaptive-tdee.service';
+import { domainEventEmitter } from '@/common/event-emitter';
 
 const DAY_MS = 86_400_000;
 const KCAL_PER_KG = 7700;
