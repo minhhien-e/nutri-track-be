@@ -28,7 +28,7 @@ export class AdminBodySystemsService {
         await this.syncNutrients(transaction, bodySystem.id, nutrients);
       }
       return bodySystem;
-    });
+    }, { timeout: 30000 });
   }
 
   async update(id: string, data: UpdateBodySystemDto) {
@@ -42,7 +42,7 @@ export class AdminBodySystemsService {
         await this.syncNutrients(transaction, id, nutrients);
       }
       return bodySystem;
-    });
+    }, { timeout: 30000 });
   }
 
   private async syncNutrients(transaction: Prisma.TransactionClient, bodySystemId: string, nutrients: Record<string, number>) {
