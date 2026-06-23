@@ -3,6 +3,7 @@ import { AdminBodySystemsService } from '@/modules/admin/body-systems/body-syste
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { AdminGuard } from '@/modules/auth/guards/admin.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CreateBodySystemDto, UpdateBodySystemDto } from './dto/upsert-body-system.dto';
 
 @ApiTags('admin-body-systems')
 @ApiBearerAuth()
@@ -17,12 +18,12 @@ export class AdminBodySystemsController {
   }
 
   @Post()
-  create(@Body() data: { name: string; description?: string }) {
+  create(@Body() data: CreateBodySystemDto) {
     return this.service.create(data);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: { name?: string; description?: string }) {
+  update(@Param('id') id: string, @Body() data: UpdateBodySystemDto) {
     return this.service.update(id, data);
   }
 

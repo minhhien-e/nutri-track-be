@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
+import { Prisma } from '@prisma/client';
+import { CreateBodySystemDto, UpdateBodySystemDto } from './dto/upsert-body-system.dto';
 
 @Injectable()
 export class AdminBodySystemsService {
@@ -18,15 +20,60 @@ export class AdminBodySystemsService {
     });
   }
 
-  async create(data: { name: string; description?: string }) {
-    return this.prisma.bodySystem.create({ data });
+  async create(data: CreateBodySystemDto) {
+    const { nutrients, ...sysData } = data;
+    return this.prisma.$transaction(async (transaction) => {
+      const bodySystem = await transaction.bodySystem.create({ data: sysData });
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        await this.syncNutrients(transaction, bodySystem.id, nutrients);
+      }
+      return bodySystem;
+    });
   }
 
-  async update(id: string, data: { name?: string; description?: string }) {
-    return this.prisma.bodySystem.update({
-      where: { id },
-      data,
+  async update(id: string, data: UpdateBodySystemDto) {
+    const { nutrients, ...sysData } = data;
+    return this.prisma.$transaction(async (transaction) => {
+      const bodySystem = await transaction.bodySystem.update({
+        where: { id },
+        data: sysData,
+      });
+      if (nutrients && Object.keys(nutrients).length > 0) {
+        await this.syncNutrients(transaction, id, nutrients);
+      }
+      return bodySystem;
     });
+  }
+
+  private async syncNutrients(transaction: Prisma.TransactionClient, bodySystemId: string, nutrients: Record<string, number>) {
+    for (const [nutrientName, impactLevel] of Object.entries(nutrients)) {
+      let nutrient = await transaction.nutrient.findFirst({
+        where: { name: { equals: nutrientName.trim(), mode: Prisma.QueryMode.insensitive } },
+      });
+      if (!nutrient) {
+        nutrient = await transaction.nutrient.create({
+          data: {
+            name: nutrientName.trim(),
+            unit: 'mg',
+            category: 'other',
+          },
+        });
+      }
+      await transaction.bodySystemNutrient.upsert({
+        where: {
+          bodySystemId_nutrientId: {
+            bodySystemId,
+            nutrientId: nutrient.id,
+          },
+        },
+        update: { impactLevel },
+        create: {
+          bodySystemId,
+          nutrientId: nutrient.id,
+          impactLevel,
+        },
+      });
+    }
   }
 
   async remove(id: string) {
